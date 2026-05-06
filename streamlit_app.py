@@ -13,7 +13,7 @@ START_DATE = date(2026, 6, 1)
 END_DATE = date(2027, 2, 1)
 MAX_DISTANCE = 100
 
-ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"
+ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 
 # =========================
 # CONNECT TO GOOGLE SHEETS
