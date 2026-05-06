@@ -26,19 +26,15 @@ df = conn.read(
     ttl=0
 )
 
-
 # =========================
 # UI HEADER
 # =========================
 st.image("cedar70000km.png", use_container_width=True)
-
 # st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge") #
-
 st.markdown("""
 **🎯 Goal:** 70,000 km  
 **📅 Period:** 1 June 2026 → 1 Feb 2027  
 """)
-
 # =========================
 # SUBMISSION FORM
 # =========================
