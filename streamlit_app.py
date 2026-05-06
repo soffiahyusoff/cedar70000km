@@ -12,7 +12,7 @@ START_DATE = date(2026, 6, 1)
 END_DATE = date(2027, 2, 1)
 MAX_DISTANCE = 100
 
-ADMIN_PASSWORD = "admin123"
+ADMIN_PASSWORD = "cedar70th"
 
 # =========================
 # CONNECT TO GOOGLE SHEETS
