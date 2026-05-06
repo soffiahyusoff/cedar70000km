@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import uuid
+import plotly
 from streamlit_gsheets import GSheetsConnection
 
 # =========================
@@ -112,6 +113,28 @@ if not df.empty:
         .head(10)
     )
 
+
+completed = total_km
+remaining = max(GOAL_KM - total_km, 0)
+
+fig = go.Figure(data=[go.Pie(
+    labels=["Completed 🎉", "Remaining 💪"],
+    values=[completed, remaining],
+    hole=0.65,
+    marker=dict(colors=["#FF4B4B", "#E0E0E0"])
+)])
+
+fig.update_layout(
+    showlegend=True,
+    annotations=[dict(
+        text=f"{(completed/GOAL_KM)*100:.1f}%<br>Done!",
+        x=0.5, y=0.5,
+        font_size=22,
+        showarrow=False
+    )]
+)
+
+st.plotly_chart(fig)
 # =========================
 # ADMIN PANEL
 # =========================
