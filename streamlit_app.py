@@ -31,7 +31,8 @@ df = conn.read(
 # UI HEADER
 # =========================
 st.image("cedar70000km.png", use_container_width=True)
-st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
+
+# st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge") #
 
 st.markdown("""
 **🎯 Goal:** 70,000 km  
