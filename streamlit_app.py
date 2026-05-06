@@ -20,7 +20,10 @@ ADMIN_PASSWORD = "admin123"
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Always fresh read (no caching)
-df = conn.read(ttl=0)
+df = conn.read(
+    spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+    ttl=0
+
 
 # =========================
 # UI HEADER
