@@ -23,6 +23,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
     ttl=0
+)
 
 
 # =========================
