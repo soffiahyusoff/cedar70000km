@@ -94,12 +94,67 @@ if st.button("Submit"):
 # =========================
 st.header("📊 Progress")
 
+# ✅ Default value (prevents crash)
+total_km = 0
+
 if not df.empty:
     total_km = df["distance"].astype(float).sum()
 
-    st.metric("Total Distance", f"{total_km:.2f} km")
-    st.progress(min(total_km / GOAL_KM, 1.0))
+# ✅ Progress calculations
+remaining_km = max(GOAL_KM - total_km, 0)
+percent = total_km / GOAL_KM if GOAL_KM > 0 else 0
 
+# ✅ FUN PROGRESS DISPLAY
+st.subheader("🏁 Let’s Reach 70,000 km together!")
+
+st.progress(min(percent, 1.0))
+
+st.markdown(f"""
+### 🌟 {total_km:.0f} km completed!
+💪 Only **{remaining_km:.0f} km** more to go!
+""")
+
+# =========================
+# DONUT CHART (FUN VISUAL)
+# =========================
+import plotly.graph_objects as go
+
+fig = go.Figure(data=[go.Pie(
+    labels=["Completed 🎉", "Remaining 💪"],
+    values=[total_km, remaining_km],
+    hole=0.65,
+    marker=dict(colors=["#FF4B4B", "#E0E0E0"])
+)])
+
+fig.update_layout(
+    showlegend=True,
+    annotations=[dict(
+        text=f"{percent*100:.1f}%<br>Done!",
+        x=0.5, y=0.5,
+        font_size=22,
+        showarrow=False
+    )]
+)
+
+st.plotly_chart(fig)
+
+# =========================
+# EXTRA: MILESTONES 🎉
+# =========================
+milestones = [1000, 5000, 10000, 25000, 50000, 70000]
+
+for m in milestones:
+    if total_km >= m:
+        st.success(f"🎉 WE HIT {m:,} KM!")
+
+if total_km >= GOAL_KM:
+    st.balloons()
+    st.success("🏆 AMAZING! 70,000 KM GOAL ACHIEVED!")
+
+# =========================
+# LEADERBOARD + RECENT
+# =========================
+if not df.empty:
     # Leaderboard
     leaderboard = df.groupby("name")["distance"].sum().sort_values(ascending=False)
     st.subheader("🏆 Leaderboard")
@@ -112,29 +167,6 @@ if not df.empty:
         [["submission_id", "name", "distance", "activity_date"]]
         .head(10)
     )
-
-
-completed = total_km
-remaining = max(GOAL_KM - total_km, 0)
-
-fig = go.Figure(data=[go.Pie(
-    labels=["Completed 🎉", "Remaining 💪"],
-    values=[completed, remaining],
-    hole=0.65,
-    marker=dict(colors=["#FF4B4B", "#E0E0E0"])
-)])
-
-fig.update_layout(
-    showlegend=True,
-    annotations=[dict(
-        text=f"{(completed/GOAL_KM)*100:.1f}%<br>Done!",
-        x=0.5, y=0.5,
-        font_size=22,
-        showarrow=False
-    )]
-)
-
-st.plotly_chart(fig)
 # =========================
 # ADMIN PANEL
 # =========================
