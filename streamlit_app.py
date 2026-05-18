@@ -104,7 +104,7 @@ if st.button("Register"):
         ttl=0
     )
 
-        # Submission form immediately after registration
+    # Submission form immediately after registration
         name = new_name
         activity_date = st.date_input("Date of activity", min_value=START_DATE, max_value=END_DATE)
         distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
