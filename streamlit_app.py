@@ -75,7 +75,7 @@ if st.button("Submit"):
     new_data = pd.DataFrame([{
         "submission_id": str(uuid.uuid4())[:8],
         "name": name,
-        "distance in km": distance,
+        "distance": distance,
         "activity_date": activity_date.strftime("%Y-%m-%d"),
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }])
