@@ -171,14 +171,14 @@ if submission_done:
     )
 
     # Leaderboard
-    leaderboard = merged_df.groupby(["name", "Year of Grad", "CCA"])["distance"].sum().sort_values(ascending=False)
+    leaderboard = merged_df.groupby(["Name", "Year of Grad", "CCA"])["distance"].sum().sort_values(ascending=False)
     leaderboard_df = leaderboard.reset_index().rename(columns={"distance": "distance in km"}).head(10)
     st.subheader("🏆 Leaderboard")
     st.dataframe(leaderboard_df)
 
     # Recent submissions
     recent_df = merged_df.sort_values(by="timestamp", ascending=False)[
-        ["submission_id", "name", "Year of Grad", "CCA", "distance", "activity_date"]
+        ["submission_id", "Name", "Year of Grad", "CCA", "distance", "activity_date"]
     ].rename(columns={"distance": "distance in km"}).head(10)
     st.subheader("🕒 Recent Submissions")
     st.dataframe(recent_df)
