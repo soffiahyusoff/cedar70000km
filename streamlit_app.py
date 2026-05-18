@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import uuid
-import plotly
 from streamlit_gsheets import GSheetsConnection
 
 # =========================
@@ -26,7 +25,7 @@ df = conn.read(
     ttl=0
 )
 
-# Participants sheet (owned by another person)
+# Participants sheet
 participants_df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
     ttl=0
@@ -42,14 +41,18 @@ st.markdown("""
 """)
 
 # =========================
-# PARTICIPANT FLOW
+# PARTICIPANT CHECK
 # =========================
 st.header("👟 Participant Check")
 
 is_new = st.radio(
     "Are you a new participant?",
-    ["No, I have registered", "Yes, I am new"]
+    ["Select an option...", "No, I have registered", "Yes, I am new"],
+    index=0
 )
+
+# Flag to track if a submission was made
+submission_done = False
 
 if is_new == "Yes, I am new":
     # Registration form
@@ -84,13 +87,9 @@ if is_new == "Yes, I am new":
         st.success(f"✅ {new_name} registered successfully!")
         st.info("🎉 You’re now registered — please submit your distance below!")
 
-        # Show submission form immediately
+        # Submission form immediately after registration
         name = new_name
-        activity_date = st.date_input(
-            "Date of activity",
-            min_value=START_DATE,
-            max_value=END_DATE
-        )
+        activity_date = st.date_input("Date of activity", min_value=START_DATE, max_value=END_DATE)
         distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
 
         if st.button("Submit Distance"):
@@ -110,18 +109,13 @@ if is_new == "Yes, I am new":
             conn.update(data=updated_df)
 
             st.success("✅ Submission added!")
-            st.rerun()
+            submission_done = True
 
-else:
-    # Normal submission form
+elif is_new == "No, I have registered":
+    # Submission form
     st.header("📥 Submit Your Distance")
-
     name = st.text_input("Enter your name")
-    activity_date = st.date_input(
-        "Date of activity",
-        min_value=START_DATE,
-        max_value=END_DATE
-    )
+    activity_date = st.date_input("Date of activity", min_value=START_DATE, max_value=END_DATE)
     distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
 
     if st.button("Submit"):
@@ -133,14 +127,12 @@ else:
             st.warning(f"Max {MAX_DISTANCE} km allowed")
             st.stop()
 
-        # Validate participant name against participants sheet
         if not participants_df.empty:
             valid_names = participants_df["Name"].str.lower().tolist()
             if name.lower() not in valid_names:
                 st.error("Name not found in participants list")
                 st.stop()
 
-        # Prevent duplicate
         if not df.empty:
             duplicate = df[
                 (df["name"].str.lower() == name.lower()) &
@@ -162,126 +154,33 @@ else:
         conn.update(data=updated_df)
 
         st.success("✅ Submission added!")
-        st.rerun()
-
-
-# =========================
-# DISPLAY DATA
-# =========================
-st.header("📊 Progress")
-
-# ✅ Default value (prevents crash)
-total_km = 0
-
-if not df.empty:
-    total_km = df["distance"].astype(float).sum()
-
-# ✅ Progress calculations
-remaining_km = max(GOAL_KM - total_km, 0)
-percent = total_km / GOAL_KM if GOAL_KM > 0 else 0
-
-# ✅ FUN PROGRESS DISPLAY
-st.subheader("🏁 Let’s Reach 70,000 km together!")
-
-st.progress(min(percent, 1.0))
-
-st.markdown(f"""
-### 🌟 {total_km:.0f} km completed!
-💪 Only **{remaining_km:.0f} km** more to go!
-""")
+        submission_done = True
 
 # =========================
-# DONUT CHART (FUN VISUAL)
+# SHOW PROGRESS + LEADERBOARD ONLY AFTER SUBMISSION
 # =========================
-import plotly.graph_objects as go
+if submission_done:
+    st.header("📊 Progress & Leaderboard")
 
-fig = go.Figure(data=[go.Pie(
-    labels=["Completed 🎉", "Remaining 💪"],
-    values=[total_km, remaining_km],
-    hole=0.65,
-    marker=dict(colors=["#FF4B4B", "#E0E0E0"])
-)])
+    # Merge submissions with participants info
+    merged_df = df.merge(
+        participants_df[["Name", "Year of Grad", "CCA"]],
+        left_on="name",
+        right_on="Name",
+        how="left"
+    )
 
-fig.update_layout(
-    showlegend=True,
-    annotations=[dict(
-        text=f"{percent*100:.1f}%<br>Done!",
-        x=0.5, y=0.5,
-        font_size=22,
-        showarrow=False
-    )]
-)
-
-st.plotly_chart(fig)
-
-# =========================
-# EXTRA: MILESTONES 🎉
-# =========================
-milestones = [100, 500, 1000, 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 70000]
-
-for m in milestones:
-    if total_km >= m:
-        st.success(f"🎉 WE HIT {m:,} KM!")
-
-if total_km >= GOAL_KM:
-    st.balloons()
-    st.success("🏆 AMAZING! 70,000 KM GOAL ACHIEVED!")
-
-# =========================
-# LEADERBOARD + RECENT
-# =========================
-if not df.empty:
     # Leaderboard
-    leaderboard = df.groupby("name")["distance"].sum().sort_values(ascending=False)
-    leaderboard_df = leaderboard.reset_index().head(10)
-    leaderboard_df = leaderboard_df.rename(columns={"distance": "distance in km"})
-
+    leaderboard = merged_df.groupby(["name", "Year of Grad", "CCA"])["distance"].sum().sort_values(ascending=False)
+    leaderboard_df = leaderboard.reset_index().rename(columns={"distance": "distance in km"}).head(10)
     st.subheader("🏆 Leaderboard")
     st.dataframe(leaderboard_df)
 
-    # Recent
-    recent_df = df.sort_values(by="timestamp", ascending=False)[
-        ["submission_id", "name", "distance", "activity_date"]
-    ].head(10)
-
-    recent_df = recent_df.rename(columns={"distance": "distance in km"})
-
+    # Recent submissions
+    recent_df = merged_df.sort_values(by="timestamp", ascending=False)[
+        ["submission_id", "name", "Year of Grad", "CCA", "distance", "activity_date"]
+    ].rename(columns={"distance": "distance in km"}).head(10)
     st.subheader("🕒 Recent Submissions")
     st.dataframe(recent_df)
 
-
-# =========================
-# ADMIN PANEL
-# =========================
-st.markdown("---")
-st.header("🔐 Admin Panel")
-
-password = st.text_input("Enter admin password", type="password")
-
-if password == ADMIN_PASSWORD:
-
-    st.success("Admin access granted")
-
-    if not df.empty:
-        st.subheader("🧾 All Entries")
-
-        st.dataframe(df)
-
-        # ✅ Delete specific entry
-        delete_id = st.text_input("Enter submission_id to delete")
-
-        if st.button("Delete Entry"):
-            new_df = df[df["submission_id"] != delete_id]
-            conn.update(data=new_df)
-            st.success("Entry deleted")
-            st.rerun()
-
-        # ✅ Reset ALL data
-        if st.button("⚠️ Delete ALL entries"):
-            empty_df = pd.DataFrame(columns=df.columns)
-            conn.update(data=empty_df)
-            st.success("All entries deleted")
-            st.rerun()
-
-else:
-    st.info("Enter password to access admin panel")
+    # Admin panel, charts, milestones, etc. can also go here
