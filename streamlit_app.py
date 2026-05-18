@@ -154,9 +154,17 @@ if total_km >= GOAL_KM:
 # =========================
 if not df.empty:
     # Leaderboard
-    leaderboard = df.groupby("name")["distance"].sum().sort_values(ascending=False)
-    st.subheader("🏆 Leaderboard")
-    st.dataframe(leaderboard.reset_index().head(10))
+leaderboard = df.groupby("name")["distance"].sum().sort_values(ascending=False)
+leaderboard_df = leaderboard.reset_index().head(10)
+leaderboard_df = leaderboard_df.rename(columns={"distance": "distance in km"})
+
+st.subheader("🏆 Leaderboard")
+st.dataframe(leaderboard_df)
+    
+
+    
+
+
 
     # Recent
     st.subheader("🕒 Recent Submissions")
