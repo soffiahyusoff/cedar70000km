@@ -280,6 +280,3 @@ if admin_pw == ADMIN_PASSWORD:
             st.success(f"Participant {participant_to_delete} deleted!")
             st.rerun()
 
-
-
-    if not
