@@ -22,19 +22,26 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # Submissions sheet
 df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-    ttl=60
+    ttl=0
 )
 
 # Participants sheet
 participants_df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-    ttl=60
+    ttl=0
 )
+
+# Safeguards: ensure correct columns exist
+if df.empty or "name" not in df.columns:
+    df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
+
+if participants_df.empty or "Name" not in participants_df.columns:
+    participants_df = pd.DataFrame(columns=["Name", "Year of Grad", "CCA", "timestamp"])
 
 # =========================
 # UI HEADER
 # =========================
-st.image("cedar70000km3.png", use_container_width=True)
+st.image("cedar70000km3.png", width="stretch")
 st.markdown("""
 **🎯 Goal:** 70,000 km  
 **📅 Period:** 1 June 2026 → 1 Feb 2027  
@@ -79,27 +86,19 @@ if is_new == "Yes, I am new":
         }])
 
         updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
-
-
-
         conn.update(
             spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
             data=updated_participants
         )
-        st.success(f"✅ {new_name} registered successfully!")
-        st.rerun()  # refresh so the new participant appears immediately
-
-                
-        # Ensure submissions sheet has correct columns
-        if df.empty or "name" not in df.columns:
-        df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
-
-        # Ensure participants sheet has correct columns
-        if participants_df.empty or "Name" not in participants_df.columns:
-        participants_df = pd.DataFrame(columns=["Name", "Year of Grad", "CCA", "timestamp"])
 
         st.success(f"✅ {new_name} registered successfully!")
         st.info("🎉 You’re now registered — please submit your distance below!")
+
+        # Reload participants_df immediately
+        participants_df = conn.read(
+            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+            ttl=0
+        )
 
         # Submission form immediately after registration
         name = new_name
@@ -120,7 +119,10 @@ if is_new == "Yes, I am new":
             }])
 
             updated_df = pd.concat([df, new_data], ignore_index=True)
-            conn.update(data=updated_df)
+            conn.update(
+                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+                data=updated_df
+            )
 
             st.success("✅ Submission added!")
             submission_done = True
@@ -165,7 +167,10 @@ elif is_new == "No, I have registered":
         }])
 
         updated_df = pd.concat([df, new_data], ignore_index=True)
-        conn.update(data=updated_df)
+        conn.update(
+            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+            data=updated_df
+        )
 
         st.success("✅ Submission added!")
         submission_done = True
@@ -176,7 +181,12 @@ elif is_new == "No, I have registered":
 if submission_done:
     st.header("📊 Progress & Leaderboard")
 
-    # Merge submissions with participants info
+    # Reload submissions to ensure fresh data
+    df = conn.read(
+        spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+        ttl=0
+    )
+
     merged_df = df.merge(
         participants_df[["Name", "Year of Grad", "CCA"]],
         left_on="name",
@@ -212,8 +222,12 @@ if admin_pw == ADMIN_PASSWORD:
         submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
         if st.button("Delete Submission"):
             df = df[df["submission_id"] != submission_id_to_delete]
-            conn.update(data=df)
+            conn.update(
+                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+                data=df
+            )
             st.success(f"Submission {submission_id_to_delete} deleted!")
+            st.rerun()
 
     # Delete participants
     st.subheader("🗑️ Delete Participant")
@@ -226,10 +240,6 @@ if admin_pw == ADMIN_PASSWORD:
                 data=participants_df
             )
             st.success(f"Participant {participant_to_delete} deleted!")
-            st.rerun()   # force refresh so selectbox reloads with updated list
-            # reload participants_df so selectbox shows updated list
-    participants_df = conn.read(
-        spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-        ttl=0
-    )
+            st.rerun()
+
 
