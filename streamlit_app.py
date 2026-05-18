@@ -86,8 +86,11 @@ if is_new == "Yes, I am new":
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }])
 
-        # Append and update participants sheet
         updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+
+        # 🔎 Debug: show what will be written
+        st.write("Updated participants dataframe:", updated_participants)
+
         conn.update(
             spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
             data=updated_participants
@@ -239,8 +242,6 @@ if submission_done:
 
     st.subheader("🍩 Overall Progress")
     st.plotly_chart(fig, use_container_width=True)
-
-
 
 # =========================
 # ADMIN PANEL
