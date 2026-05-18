@@ -2,3 +2,5 @@ streamlit
 pandas
 plotly
 st-gsheets-connection
+streamlit-gsheets
+matplotlib
