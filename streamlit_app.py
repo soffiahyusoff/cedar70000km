@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import uuid
+import matplotlib.pyplot as plt
 from streamlit_gsheets import GSheetsConnection
 
 # =========================
@@ -87,6 +88,10 @@ if is_new == "Yes, I am new":
 
         # Append and update participants sheet
         updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+
+        # Debug: show what will be written
+        st.write("Updated participants dataframe:", updated_participants)
+
         conn.update(
             spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
             data=updated_participants
@@ -213,6 +218,32 @@ if submission_done:
     st.subheader("🕒 Recent Submissions")
     st.dataframe(recent_df)
 
+    # 🎯 Milestones
+    st.subheader("🎯 Milestones")
+    total_distance = df["distance"].sum()
+    milestones = [10000, 25000, 50000, GOAL_KM]
+    for m in milestones:
+        if total_distance >= m:
+            st.success(f"✅ Milestone reached: {m:,} km")
+        else:
+            st.info(f"Next milestone: {m:,} km (currently {total_distance:,} km)")
+            break
+
+    # 🍩 Donut Visualization
+    progress = total_distance
+    remaining = max(GOAL_KM - progress, 0)
+
+    fig, ax = plt.subplots()
+    ax.pie([progress, remaining],
+           labels=[f"Completed {progress:,} km", f"Remaining {remaining:,} km"],
+           colors=["#4CAF50", "#FF9800"],
+           startangle=90,
+           wedgeprops=dict(width=0.4))
+    ax.set(aspect="equal")
+
+    st.subheader("🍩 Overall Progress")
+    st.pyplot(fig)
+
 # =========================
 # ADMIN PANEL
 # =========================
@@ -224,26 +255,4 @@ if admin_pw == ADMIN_PASSWORD:
 
     # Delete submissions
     st.subheader("🗑️ Delete Submission")
-    if not df.empty:
-        submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
-        if st.button("Delete Submission"):
-            df = df[df["submission_id"] != submission_id_to_delete]
-            conn.update(
-                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-                data=df
-            )
-            st.success(f"Submission {submission_id_to_delete} deleted!")
-            st.rerun()
-
-    # Delete participants
-    st.subheader("🗑️ Delete Participant")
-    if not participants_df.empty:
-        participant_to_delete = st.selectbox("Select participant to delete", participants_df["Name"].tolist())
-        if st.button("Delete Participant"):
-            participants_df = participants_df[participants_df["Name"] != participant_to_delete]
-            conn.update(
-                spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-                data=participants_df
-            )
-            st.success(f"Participant {participant_to_delete} deleted!")
-            st.rerun()
+    if not
