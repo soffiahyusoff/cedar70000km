@@ -264,6 +264,17 @@ if admin_pw == ADMIN_PASSWORD:
             st.success(f"Submission {submission_id_to_delete} deleted!")
             st.rerun()
 
+    # NEW: Delete all submissions
+    st.subheader("🗑️ Delete ALL Submissions")
+    if st.button("Delete All Submissions"):
+        df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
+        conn.update(
+            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+            data=df
+        )
+        st.success("🚮 All submissions deleted!")
+        st.rerun()
+
     # Delete participants
     st.subheader("🗑️ Delete Participant")
     if not participants_df.empty:
