@@ -240,21 +240,7 @@ if submission_done:
     st.subheader("🍩 Overall Progress")
     st.plotly_chart(fig, use_container_width=True)
 
-# =========================
-# ADMIN PANEL
-# =========================
-st.header("🔐 Admin Panel")
-admin_pw = st.text_input("Enter admin password", type="password")
 
-if admin_pw == ADMIN_PASSWORD:
-    st.success("Admin access granted")
-
-    # Delete submissions
-    st.subheader("🗑️ Delete Submission")
-    if not df.empty:
-        submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
-        if st.button("Delete Submission"):
-            df = df[df["submission
 
 # =========================
 # ADMIN PANEL
