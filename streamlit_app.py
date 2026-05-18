@@ -19,16 +19,16 @@ ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 # =========================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Submissions sheet
+# Submissions sheet (cached for 60s)
 df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-    ttl=0
+    ttl=60
 )
 
-# Participants sheet
+# Participants sheet (cached for 60s)
 participants_df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-    ttl=0
+    ttl=60
 )
 
 # Safeguards: ensure correct columns exist
@@ -94,7 +94,7 @@ if is_new == "Yes, I am new":
 
         st.success(f"✅ {new_name} registered successfully!")
 
-        # Reload participants immediately
+        # Reload participants immediately (force fresh read)
         participants_df = conn.read(
             spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
             ttl=0
@@ -125,6 +125,12 @@ if is_new == "Yes, I am new":
             )
 
             st.success("✅ Submission added!")
+
+            # Reload submissions immediately
+            df = conn.read(
+                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+                ttl=0
+            )
             submission_done = True
 
 elif is_new == "No, I have registered":
@@ -173,6 +179,12 @@ elif is_new == "No, I have registered":
         )
 
         st.success("✅ Submission added!")
+
+        # Reload submissions immediately
+        df = conn.read(
+            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+            ttl=0
+        )
         submission_done = True
 
 # =========================
@@ -180,12 +192,6 @@ elif is_new == "No, I have registered":
 # =========================
 if submission_done:
     st.header("📊 Progress & Leaderboard")
-
-    # Reload submissions to ensure fresh data
-    df = conn.read(
-        spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-        ttl=0
-    )
 
     merged_df = df.merge(
         participants_df[["Name", "Year of Grad", "CCA"]],
