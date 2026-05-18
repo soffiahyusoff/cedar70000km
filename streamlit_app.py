@@ -37,7 +37,7 @@ if df.empty or "name" not in df.columns:
     df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
 
 if participants_df.empty or "Name" not in participants_df.columns:
-    participants_df = pd.DataFrame(columns=["Name", "Year of Grad", "CCA", "timestamp"])
+    participants_df = pd.DataFrame(columns=["Name", "Year of Grad", "CCA", "Timestamp"])
 
 # =========================
 # UI HEADER
@@ -66,45 +66,45 @@ if is_new == "Yes, I am new":
     # Registration form
     st.subheader("📝 Register New Participant")
     new_name = st.text_input("Full Name")
-    new_grad_year = st.text_input("Year of Graduation")
+    new_grad_year = st.text_input("Year of Grad")  # ✅ match sheet header
     new_cca = st.text_input("CCA")
 
-if st.button("Register"):
-    if not new_name or not new_grad_year or not new_cca:
-        st.warning("Please fill in all fields")
-        st.stop()
-
-    if not participants_df.empty:
-        if new_name.lower() in participants_df["Name"].str.lower().tolist():
-            st.error("This participant is already registered")
+    if st.button("Register"):
+        if not new_name or not new_grad_year or not new_cca:
+            st.warning("Please fill in all fields")
             st.stop()
 
-    new_participant = pd.DataFrame([{
-        "Name": new_name,
-        "Year of Grad": new_grad_year,   # match sheet header
-        "CCA": new_cca,
-        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # match sheet header
-    }])
+        if not participants_df.empty:
+            if new_name.lower() in participants_df["Name"].str.lower().tolist():
+                st.error("This participant is already registered")
+                st.stop()
 
-    updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+        new_participant = pd.DataFrame([{
+            "Name": new_name,
+            "Year of Grad": new_grad_year,   # ✅ match sheet header
+            "CCA": new_cca,
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # ✅ match sheet header
+        }])
 
-    # Debug: show what will be written
-    st.write("Updated participants dataframe:", updated_participants)
+        updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
 
-    conn.update(
-        spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-        data=updated_participants
-    )
+        # 🔎 Debug: show what will be written
+        st.write("Updated participants dataframe:", updated_participants)
 
-    st.success(f"✅ {new_name} registered successfully!")
+        conn.update(
+            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+            data=updated_participants
+        )
 
-    # Force reload so the new participant is visible immediately
-    participants_df = conn.read(
-        spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-        ttl=0
-    )
+        st.success(f"✅ {new_name} registered successfully!")
 
-    # Submission form immediately after registration
+        # Reload participants immediately (force fresh read)
+        participants_df = conn.read(
+            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+            ttl=0
+        )
+
+        # Submission form immediately after registration
         name = new_name
         activity_date = st.date_input("Date of activity", min_value=START_DATE, max_value=END_DATE)
         distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
