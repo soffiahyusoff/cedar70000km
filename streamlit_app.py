@@ -244,6 +244,7 @@ if submission_done:
     st.subheader("🍩 Overall Progress")
     st.pyplot(fig)
 
+
 # =========================
 # ADMIN PANEL
 # =========================
@@ -255,4 +256,30 @@ if admin_pw == ADMIN_PASSWORD:
 
     # Delete submissions
     st.subheader("🗑️ Delete Submission")
+    if not df.empty:
+        submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
+        if st.button("Delete Submission"):
+            df = df[df["submission_id"] != submission_id_to_delete]
+            conn.update(
+                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+                data=df
+            )
+            st.success(f"Submission {submission_id_to_delete} deleted!")
+            st.rerun()
+
+    # Delete participants
+    st.subheader("🗑️ Delete Participant")
+    if not participants_df.empty:
+        participant_to_delete = st.selectbox("Select participant to delete", participants_df["Name"].tolist())
+        if st.button("Delete Participant"):
+            participants_df = participants_df[participants_df["Name"] != participant_to_delete]
+            conn.update(
+                spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+                data=participants_df
+            )
+            st.success(f"Participant {participant_to_delete} deleted!")
+            st.rerun()
+
+
+
     if not
