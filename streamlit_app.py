@@ -68,37 +68,38 @@ if is_new == "Yes, I am new":
     new_grad_year = st.text_input("Year of Graduation")
     new_cca = st.text_input("CCA")
 
-    if st.button("Register"):
-        if not new_name or not new_grad_year or not new_cca:
-            st.warning("Please fill in all fields")
+if st.button("Register"):
+    if not new_name or not new_grad_year or not new_cca:
+        st.warning("Please fill in all fields")
+        st.stop()
+
+    if not participants_df.empty:
+        if new_name.lower() in participants_df["Name"].str.lower().tolist():
+            st.error("This participant is already registered")
             st.stop()
 
-        if not participants_df.empty:
-            if new_name.lower() in participants_df["Name"].str.lower().tolist():
-                st.error("This participant is already registered")
-                st.stop()
+    new_participant = pd.DataFrame([{
+        "Name": new_name,
+        "Year of Grad": new_grad_year,
+        "CCA": new_cca,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }])
 
-        new_participant = pd.DataFrame([{
-            "Name": new_name,
-            "Year of Grad": new_grad_year,
-            "CCA": new_cca,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }])
+    # Append and update participants sheet
+    updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+    conn.update(
+        spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+        data=updated_participants
+    )
 
-        updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
-        conn.update(
-            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-            data=updated_participants
-        )
+    st.success(f"✅ {new_name} registered successfully!")
 
-        st.success(f"✅ {new_name} registered successfully!")
-        st.info("🎉 You’re now registered — please submit your distance below!")
+    # Force reload so the new participant is visible immediately
+    participants_df = conn.read(
+        spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+        ttl=0
+    )
 
-        # Reload participants_df immediately
-        participants_df = conn.read(
-            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-            ttl=0
-        )
 
         # Submission form immediately after registration
         name = new_name
@@ -167,13 +168,19 @@ elif is_new == "No, I have registered":
         }])
 
         updated_df = pd.concat([df, new_data], ignore_index=True)
-        conn.update(
-            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-            data=updated_df
-        )
+conn.update(
+    spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+    data=updated_df
+)
 
-        st.success("✅ Submission added!")
-        submission_done = True
+st.success("✅ Submission added!")
+
+# Reload submissions immediately
+df = conn.read(
+    spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+    ttl=0
+)
+st.write("Updated participants dataframe:", updated_participants)
 
 # =========================
 # SHOW PROGRESS + LEADERBOARD ONLY AFTER SUBMISSION
