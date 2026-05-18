@@ -251,7 +251,7 @@ admin_pw = st.text_input("Enter admin password", type="password")
 if admin_pw == ADMIN_PASSWORD:
     st.success("Admin access granted")
 
-    # Delete submissions
+    # Delete submissions by ID
     st.subheader("🗑️ Delete Submission")
     if not df.empty:
         submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
