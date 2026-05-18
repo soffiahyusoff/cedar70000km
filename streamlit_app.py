@@ -22,13 +22,13 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 # Submissions sheet
 df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-    ttl=0
+    ttl=60
 )
 
 # Participants sheet
 participants_df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-    ttl=0
+    ttl=60
 )
 
 # =========================
