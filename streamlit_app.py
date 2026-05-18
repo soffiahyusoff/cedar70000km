@@ -20,9 +20,15 @@ ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
 # =========================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Always fresh read (no caching)
+# Submissions sheet
 df = conn.read(
     spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
+    ttl=0
+)
+
+# Participants sheet (owned by another person)
+participants_df = conn.read(
+    spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
     ttl=0
 )
 
@@ -30,62 +36,134 @@ df = conn.read(
 # UI HEADER
 # =========================
 st.image("cedar70000km3.png", use_container_width=True)
-# st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge") #
 st.markdown("""
 **🎯 Goal:** 70,000 km  
 **📅 Period:** 1 June 2026 → 1 Feb 2027  
 """)
-# =========================
-# SUBMISSION FORM
-# =========================
-st.header("📥 Submit Your Distance")
 
-name = st.text_input("Enter your name")
+# =========================
+# PARTICIPANT FLOW
+# =========================
+st.header("👟 Participant Check")
 
-activity_date = st.date_input(
-    "Date of activity",
-    min_value=START_DATE,
-    max_value=END_DATE
+is_new = st.radio(
+    "Are you a new participant?",
+    ["No, I have registered", "Yes, I am new"]
 )
 
-distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
+if is_new == "Yes, I am new":
+    # Registration form
+    st.subheader("📝 Register New Participant")
+    new_name = st.text_input("Full Name")
+    new_grad_year = st.text_input("Year of Graduation")
+    new_cca = st.text_input("CCA")
 
-if st.button("Submit"):
-
-    if not name:
-        st.warning("Enter your name")
-        st.stop()
-
-    if distance > MAX_DISTANCE:
-        st.warning(f"Max {MAX_DISTANCE} km allowed")
-        st.stop()
-
-    # ✅ Prevent duplicate
-    if not df.empty:
-        duplicate = df[
-            (df["name"].str.lower() == name.lower()) &
-            (df["activity_date"] == activity_date.strftime("%Y-%m-%d"))
-        ]
-
-        if not duplicate.empty:
-            st.error("Already submitted for this date")
+    if st.button("Register"):
+        if not new_name or not new_grad_year or not new_cca:
+            st.warning("Please fill in all fields")
             st.stop()
 
-    # ✅ Create new row
-    new_data = pd.DataFrame([{
-        "submission_id": str(uuid.uuid4())[:8],
-        "name": name,
-        "distance": distance,
-        "activity_date": activity_date.strftime("%Y-%m-%d"),
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }])
+        if not participants_df.empty:
+            if new_name.lower() in participants_df["Name"].str.lower().tolist():
+                st.error("This participant is already registered")
+                st.stop()
 
-    # ✅ Append + write back
-    updated_df = pd.concat([df, new_data], ignore_index=True)
-    conn.update(data=updated_df)
+        new_participant = pd.DataFrame([{
+            "Name": new_name,
+            "Year of Grad": new_grad_year,
+            "CCA": new_cca,
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }])
 
-    st.success("✅ Submission added!")
-    st.rerun()
+        updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+        conn.update(
+            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+            data=updated_participants
+        )
+
+        st.success(f"✅ {new_name} registered successfully!")
+        st.info("🎉 You’re now registered — please submit your distance below!")
+
+        # Show submission form immediately
+        name = new_name
+        activity_date = st.date_input(
+            "Date of activity",
+            min_value=START_DATE,
+            max_value=END_DATE
+        )
+        distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
+
+        if st.button("Submit Distance"):
+            if distance > MAX_DISTANCE:
+                st.warning(f"Max {MAX_DISTANCE} km allowed")
+                st.stop()
+
+            new_data = pd.DataFrame([{
+                "submission_id": str(uuid.uuid4())[:8],
+                "name": name,
+                "distance": distance,
+                "activity_date": activity_date.strftime("%Y-%m-%d"),
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }])
+
+            updated_df = pd.concat([df, new_data], ignore_index=True)
+            conn.update(data=updated_df)
+
+            st.success("✅ Submission added!")
+            st.rerun()
+
+else:
+    # Normal submission form
+    st.header("📥 Submit Your Distance")
+
+    name = st.text_input("Enter your name")
+    activity_date = st.date_input(
+        "Date of activity",
+        min_value=START_DATE,
+        max_value=END_DATE
+    )
+    distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
+
+    if st.button("Submit"):
+        if not name:
+            st.warning("Enter your name")
+            st.stop()
+
+        if distance > MAX_DISTANCE:
+            st.warning(f"Max {MAX_DISTANCE} km allowed")
+            st.stop()
+
+        # Validate participant name against participants sheet
+        if not participants_df.empty:
+            valid_names = participants_df["Name"].str.lower().tolist()
+            if name.lower() not in valid_names:
+                st.error("Name not found in participants list")
+                st.stop()
+
+        # Prevent duplicate
+        if not df.empty:
+            duplicate = df[
+                (df["name"].str.lower() == name.lower()) &
+                (df["activity_date"] == activity_date.strftime("%Y-%m-%d"))
+            ]
+            if not duplicate.empty:
+                st.error("Already submitted for this date")
+                st.stop()
+
+        new_data = pd.DataFrame([{
+            "submission_id": str(uuid.uuid4())[:8],
+            "name": name,
+            "distance": distance,
+            "activity_date": activity_date.strftime("%Y-%m-%d"),
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }])
+
+        updated_df = pd.concat([df, new_data], ignore_index=True)
+        conn.update(data=updated_df)
+
+        st.success("✅ Submission added!")
+        st.rerun()
+
 
 # =========================
 # DISPLAY DATA
