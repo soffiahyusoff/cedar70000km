@@ -183,4 +183,33 @@ if submission_done:
     st.subheader("🕒 Recent Submissions")
     st.dataframe(recent_df)
 
-    # Admin panel, charts, milestones, etc. can also go here
+# =========================
+# ADMIN PANEL
+# =========================
+st.header("🔐 Admin Panel")
+admin_pw = st.text_input("Enter admin password", type="password")
+
+if admin_pw == ADMIN_PASSWORD:
+    st.success("Admin access granted")
+
+    # Delete submissions
+    st.subheader("🗑️ Delete Submission")
+    if not df.empty:
+        submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
+        if st.button("Delete Submission"):
+            df = df[df["submission_id"] != submission_id_to_delete]
+            conn.update(data=df)
+            st.success(f"Submission {submission_id_to_delete} deleted!")
+
+    # Delete participants
+    st.subheader("🗑️ Delete Participant")
+    if not participants_df.empty:
+        participant_to_delete = st.selectbox("Select participant to delete", participants_df["Name"].tolist())
+        if st.button("Delete Participant"):
+            participants_df = participants_df[participants_df["Name"] != participant_to_delete]
+            conn.update(
+                spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+                data=participants_df
+            )
+            st.success(f"Participant {participant_to_delete} deleted!")
+
