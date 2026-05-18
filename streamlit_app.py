@@ -154,25 +154,24 @@ if total_km >= GOAL_KM:
 # =========================
 if not df.empty:
     # Leaderboard
-leaderboard = df.groupby("name")["distance"].sum().sort_values(ascending=False)
-leaderboard_df = leaderboard.reset_index().head(10)
-leaderboard_df = leaderboard_df.rename(columns={"distance": "distance in km"})
+    leaderboard = df.groupby("name")["distance"].sum().sort_values(ascending=False)
+    leaderboard_df = leaderboard.reset_index().head(10)
+    leaderboard_df = leaderboard_df.rename(columns={"distance": "distance in km"})
 
-st.subheader("🏆 Leaderboard")
-st.dataframe(leaderboard_df)
-    
-
-    
-
-
+    st.subheader("🏆 Leaderboard")
+    st.dataframe(leaderboard_df)
 
     # Recent
+    recent_df = df.sort_values(by="timestamp", ascending=False)[
+        ["submission_id", "name", "distance", "activity_date"]
+    ].head(10)
+
+    recent_df = recent_df.rename(columns={"distance": "distance in km"})
+
     st.subheader("🕒 Recent Submissions")
-    st.dataframe(
-        df.sort_values(by="timestamp", ascending=False)
-        [["submission_id", "name", "distance", "activity_date"]]
-        .head(10)
-    )
+    st.dataframe(recent_df)
+
+
 # =========================
 # ADMIN PANEL
 # =========================
