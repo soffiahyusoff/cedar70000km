@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import uuid
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from streamlit_gsheets import GSheetsConnection
 
 # =========================
@@ -88,10 +88,6 @@ if is_new == "Yes, I am new":
 
         # Append and update participants sheet
         updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
-
-        # Debug: show what will be written
-        st.write("Updated participants dataframe:", updated_participants)
-
         conn.update(
             spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
             data=updated_participants
@@ -229,21 +225,36 @@ if submission_done:
             st.info(f"Next milestone: {m:,} km (currently {total_distance:,} km)")
             break
 
-    # 🍩 Donut Visualization
+    # 🍩 Donut Visualization (Plotly)
     progress = total_distance
     remaining = max(GOAL_KM - progress, 0)
 
-    fig, ax = plt.subplots()
-    ax.pie([progress, remaining],
-           labels=[f"Completed {progress:,} km", f"Remaining {remaining:,} km"],
-           colors=["#4CAF50", "#FF9800"],
-           startangle=90,
-           wedgeprops=dict(width=0.4))
-    ax.set(aspect="equal")
+    fig = go.Figure(data=[go.Pie(
+        labels=[f"Completed {progress:,} km", f"Remaining {remaining:,} km"],
+        values=[progress, remaining],
+        hole=.4,
+        marker=dict(colors=["#4CAF50", "#FF9800"])
+    )])
+    fig.update_layout(showlegend=True)
 
     st.subheader("🍩 Overall Progress")
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
+# =========================
+# ADMIN PANEL
+# =========================
+st.header("🔐 Admin Panel")
+admin_pw = st.text_input("Enter admin password", type="password")
+
+if admin_pw == ADMIN_PASSWORD:
+    st.success("Admin access granted")
+
+    # Delete submissions
+    st.subheader("🗑️ Delete Submission")
+    if not df.empty:
+        submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
+        if st.button("Delete Submission"):
+            df = df[df["submission
 
 # =========================
 # ADMIN PANEL
