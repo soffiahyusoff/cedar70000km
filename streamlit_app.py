@@ -79,10 +79,24 @@ if is_new == "Yes, I am new":
         }])
 
         updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+
+
+
         conn.update(
             spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
             data=updated_participants
         )
+        st.success(f"✅ {new_name} registered successfully!")
+        st.rerun()  # refresh so the new participant appears immediately
+
+                
+        # Ensure submissions sheet has correct columns
+        if df.empty or "name" not in df.columns:
+        df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
+
+        # Ensure participants sheet has correct columns
+        if participants_df.empty or "Name" not in participants_df.columns:
+        participants_df = pd.DataFrame(columns=["Name", "Year of Grad", "CCA", "timestamp"])
 
         st.success(f"✅ {new_name} registered successfully!")
         st.info("🎉 You’re now registered — please submit your distance below!")
