@@ -212,4 +212,10 @@ if admin_pw == ADMIN_PASSWORD:
                 data=participants_df
             )
             st.success(f"Participant {participant_to_delete} deleted!")
+            st.rerun()   # force refresh so selectbox reloads with updated list
+            # reload participants_df so selectbox shows updated list
+    participants_df = conn.read(
+        spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
+        ttl=0
+    )
 
