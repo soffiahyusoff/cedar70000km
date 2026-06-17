@@ -217,24 +217,64 @@ distance = st.number_input(
 )
 
 # =========================
-# PARTICIPANT REGISTRATION (ADMIN USE)
+# ADMIN ACCESS (HIDDEN)
 # =========================
-st.header("🧑‍🤝‍🧑 Register Participants")
+st.markdown("---")
 
-with st.expander("Add participant manually"):
+admin_password = st.text_input("🔐 Admin Access", type="password")
 
-    reg_name = st.text_input("Name (registration)", key="reg_name")
-    reg_year = st.text_input("Graduation Year", key="reg_year")
-    reg_cca = st.text_input("CCA", key="reg_cca")
+if admin_password == "cedar70th":
 
-    if st.button("Add Participant"):
-        if not reg_name or not reg_year or not reg_cca:
-            st.warning("All fields required")
-        else:
-            get_or_create_participant(reg_name, reg_year, reg_cca)
-            st.success("✅ Participant added")
+    # =========================
+    # ADMIN PANEL (ONLY VISIBLE AFTER LOGIN)
+    # =========================
+    st.header("🔧 Admin Controls")
 
+    if not df.empty:
 
+        st.subheader("🧾 All Distance Entries")
+
+        st.dataframe(
+            df[["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]],
+            use_container_width=True
+        )
+
+        # -------------------------
+        # DELETE SINGLE ENTRY
+        # -------------------------
+        st.subheader("🗑 Delete Individual Entry")
+
+        delete_id = st.text_input("Enter submission_id")
+
+        if st.button("Delete Entry"):
+            if delete_id:
+                c.execute("""
+                    DELETE FROM distance_logs
+                    WHERE submission_id = ?
+                """, (delete_id,))
+                conn.commit()
+                st.success("✅ Entry deleted")
+                st.rerun()
+            else:
+                st.warning("Enter a valid submission_id")
+
+        # -------------------------
+        # DELETE ALL ENTRIES
+        # -------------------------
+        st.subheader("⚠️ Reset All Distance Entries")
+
+        confirm = st.checkbox("I confirm I want to delete ALL entries")
+
+        if st.button("Delete ALL entries") and confirm:
+            c.execute("DELETE FROM distance_logs")
+            conn.commit()
+            st.success("✅ All entries cleared")
+            st.rerun()
+
+    else:
+        st.info("No entries available.")
+
+# 👉 NOTHING else is shown if password is wrong
 # =========================
 # SUBMIT
 # =========================
