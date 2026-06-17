@@ -2,7 +2,6 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import datetime, date
-import os
 import uuid
 
 # =========================
@@ -11,11 +10,7 @@ import uuid
 GOAL_KM = 70000
 START_DATE = date(2026, 6, 1)
 END_DATE = date(2027, 2, 1)
-
 MAX_DISTANCE = 100  # Prevent unrealistic entries
-
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # =========================
 # DATABASE SETUP
@@ -29,7 +24,6 @@ CREATE TABLE IF NOT EXISTS submissions (
     name TEXT,
     distance REAL,
     activity_date TEXT,
-    image TEXT,
     timestamp TEXT
 )
 ''')
@@ -38,17 +32,16 @@ conn.commit()
 # =========================
 # FUNCTIONS
 # =========================
-def add_submission(submission_id, name, distance, activity_date, image_path):
+def add_submission(submission_id, name, distance, activity_date):
     c.execute("""
         INSERT INTO submissions
-        (submission_id, name, distance, activity_date, image, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (submission_id, name, distance, activity_date, timestamp)
+        VALUES (?, ?, ?, ?, ?)
     """, (
         submission_id,
         name,
         distance,
         activity_date,
-        image_path,
         datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ))
     conn.commit()
@@ -57,7 +50,7 @@ def get_data():
     return pd.read_sql("SELECT * FROM submissions", conn)
 
 # =========================
-# UI
+# UI HEADER
 # =========================
 st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
 
@@ -69,7 +62,7 @@ Let’s achieve this together 💜
 """)
 
 # =========================
-# SUBMISSION FORM
+# FORM INPUT
 # =========================
 st.header("📥 Submit Your Distance")
 
@@ -81,17 +74,16 @@ activity_date = st.date_input(
     max_value=END_DATE
 )
 
-distance = st.number_input("Distance covered (km)", min_value=0.1, step=0.1)
-
-uploaded_file = st.file_uploader(
-    "Upload screenshot (Strava or tracker)",
-    type=["jpg", "png", "jpeg"]
+distance = st.number_input(
+    "Distance covered (km)",
+    min_value=0.1,
+    step=0.1
 )
 
 if st.button("Submit"):
 
     # =========================
-    # VALIDATION
+    # VALIDATIONS
     # =========================
     if not name:
         st.warning("Please enter your name.")
@@ -105,43 +97,25 @@ if st.button("Submit"):
         st.warning(f"Distance too large (> {MAX_DISTANCE} km). Please verify.")
         st.stop()
 
-    # ✅ Prevent duplicate submission (same name + same date)
+    # ✅ Prevent duplicate submission
     existing = c.execute("""
         SELECT * FROM submissions
-        WHERE name=? AND activity_date=?
+        WHERE LOWER(name)=? AND activity_date=?
     """, (name.strip().lower(), activity_date.strftime("%Y-%m-%d"))).fetchone()
 
     if existing:
         st.error("❌ You have already submitted for this date.")
         st.stop()
 
-    # =========================
-    # GENERATE UNIQUE ID
-    # =========================
+    # ✅ Generate unique ID
     submission_id = str(uuid.uuid4())[:8]
 
-    # =========================
-    # SAVE IMAGE SAFELY
-    # =========================
-    image_path = None
-
-    if uploaded_file:
-        file_ext = uploaded_file.name.split(".")[-1]
-        filename = f"{submission_id}.{file_ext}"
-        image_path = os.path.join(UPLOAD_FOLDER, filename)
-
-        with open(image_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-
-    # =========================
-    # SAVE TO DATABASE
-    # =========================
+    # ✅ Save submission
     add_submission(
         submission_id,
         name.strip(),
         float(distance),
-        activity_date.strftime("%Y-%m-%d"),
-        image_path
+        activity_date.strftime("%Y-%m-%d")
     )
 
     st.success(f"✅ Submission recorded! ID: {submission_id}")
@@ -155,6 +129,7 @@ df = get_data()
 
 if not df.empty:
 
+    # ✅ Total progress
     total_km = df["distance"].sum()
 
     st.metric("Total Distance Covered", f"{total_km:.2f} km")
@@ -164,9 +139,7 @@ if not df.empty:
 
     st.write(f"Progress: {total_km:.2f} / {GOAL_KM} km")
 
-    # =========================
-    # LEADERBOARD
-    # =========================
+    # ✅ Leaderboard
     st.subheader("🏆 Leaderboard")
 
     leaderboard = (
@@ -178,9 +151,7 @@ if not df.empty:
 
     st.dataframe(leaderboard.head(10))
 
-    # =========================
-    # RECENT SUBMISSIONS
-    # =========================
+    # ✅ Recent submissions
     st.subheader("🕒 Recent Submissions")
 
     st.dataframe(
@@ -189,25 +160,13 @@ if not df.empty:
         ].head(10)
     )
 
-    # =========================
-    # DAILY TREND
-    # =========================
+    # ✅ Daily trend
     st.subheader("📈 Daily Distance Trend")
 
     df["activity_date"] = pd.to_datetime(df["activity_date"])
     daily = df.groupby("activity_date")["distance"].sum()
 
     st.line_chart(daily)
-
-    # =========================
-    # SHOW SOME IMAGES
-    # =========================
-    st.subheader("📸 Latest Activity Screenshots")
-
-    recent_images = df[df["image"].notnull()].tail(5)
-
-    for _, row in recent_images.iterrows():
-        st.image(row["image"], caption=f"{row['name']} - {row['distance']} km", width=300)
 
 else:
     st.info("No submissions yet. Be the first!")
@@ -221,13 +180,10 @@ today = date.today()
 
 if today < START_DATE:
     st.info("Event has not started yet.")
-
 elif today > END_DATE:
     st.success("🎉 Event completed!")
-
 else:
     total_days = (END_DATE - START_DATE).days
     days_passed = (today - START_DATE).days
-
     st.progress(days_passed / total_days)
     st.write(f"Day {days_passed} of {total_days}")
