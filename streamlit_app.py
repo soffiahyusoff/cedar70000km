@@ -56,7 +56,7 @@ st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
 
 st.markdown("""
 **🎯 Goal:** 70,000 km  
-**📅 Period:** 1 June 2026 → 1 Feb 2027  
+**📅 Period:** 1 July 2026 → 1 March 2027  
 
 Let’s achieve this together 💜
 """)
