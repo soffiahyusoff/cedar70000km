@@ -226,10 +226,32 @@ admin_password = st.text_input("🔐 Admin Access", type="password")
 if admin_password == "cedar70th":
 
     # =========================
-    # ADMIN PANEL (ONLY VISIBLE AFTER LOGIN)
+    # ADMIN PANEL
     # =========================
     st.header("🔧 Admin Controls")
 
+    # =========================
+    # ✅ 1. ADD PARTICIPANTS
+    # =========================
+    st.subheader("🧑‍🤝‍🧑 Add Participants")
+
+    with st.expander("Add new participant"):
+
+        reg_name = st.text_input("Name", key="admin_name")
+        reg_year = st.text_input("Graduation Year", key="admin_year")
+        reg_cca = st.text_input("CCA", key="admin_cca")
+
+        if st.button("Add Participant"):
+            if not reg_name or not reg_year or not reg_cca:
+                st.warning("All fields required")
+            else:
+                get_or_create_participant(reg_name, reg_year, reg_cca)
+                st.success("✅ Participant added")
+                st.rerun()
+
+    # =========================
+    # ✅ 2. VIEW ENTRIES
+    # =========================
     if not df.empty:
 
         st.subheader("🧾 All Distance Entries")
@@ -239,12 +261,12 @@ if admin_password == "cedar70th":
             use_container_width=True
         )
 
-        # -------------------------
-        # DELETE SINGLE ENTRY
-        # -------------------------
+        # =========================
+        # ✅ 3. DELETE SINGLE ENTRY
+        # =========================
         st.subheader("🗑 Delete Individual Entry")
 
-        delete_id = st.text_input("Enter submission_id")
+        delete_id = st.text_input("Enter submission_id", key="delete_id")
 
         if st.button("Delete Entry"):
             if delete_id:
@@ -258,9 +280,9 @@ if admin_password == "cedar70th":
             else:
                 st.warning("Enter a valid submission_id")
 
-        # -------------------------
-        # DELETE ALL ENTRIES
-        # -------------------------
+        # =========================
+        # ✅ 4. RESET ALL ENTRIES
+        # =========================
         st.subheader("⚠️ Reset All Distance Entries")
 
         confirm = st.checkbox("I confirm I want to delete ALL entries")
@@ -273,6 +295,7 @@ if admin_password == "cedar70th":
 
     else:
         st.info("No entries available.")
+
 
 # 👉 NOTHING else is shown if password is wrong
 # =========================
