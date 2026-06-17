@@ -217,6 +217,25 @@ distance = st.number_input(
 )
 
 # =========================
+# PARTICIPANT REGISTRATION (ADMIN USE)
+# =========================
+st.header("🧑‍🤝‍🧑 Register Participants")
+
+with st.expander("Add participant manually"):
+
+    reg_name = st.text_input("Name (registration)", key="reg_name")
+    reg_year = st.text_input("Graduation Year", key="reg_year")
+    reg_cca = st.text_input("CCA", key="reg_cca")
+
+    if st.button("Add Participant"):
+        if not reg_name or not reg_year or not reg_cca:
+            st.warning("All fields required")
+        else:
+            get_or_create_participant(reg_name, reg_year, reg_cca)
+            st.success("✅ Participant added")
+
+
+# =========================
 # SUBMIT
 # =========================
 if st.button("Submit"):
