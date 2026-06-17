@@ -1,9 +1,9 @@
 import streamlit as st
+import sqlite3
 import pandas as pd
 from datetime import datetime, date
+import os
 import uuid
-import plotly.graph_objects as go
-from streamlit_gsheets import GSheetsConnection
 
 # =========================
 # CONFIG
@@ -11,281 +11,223 @@ from streamlit_gsheets import GSheetsConnection
 GOAL_KM = 70000
 START_DATE = date(2026, 6, 1)
 END_DATE = date(2027, 2, 1)
-MAX_DISTANCE = 100
 
-ADMIN_PASSWORD = st.secrets["ADMIN_PASSWORD"]
+MAX_DISTANCE = 100  # Prevent unrealistic entries
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # =========================
-# CONNECT TO GOOGLE SHEETS
+# DATABASE SETUP
 # =========================
-conn = st.connection("gsheets", type=GSheetsConnection)
+conn = sqlite3.connect("data.db", check_same_thread=False)
+c = conn.cursor()
 
-# Submissions sheet (cached for 60s)
-df = conn.read(
-    spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-    ttl=60
+c.execute('''
+CREATE TABLE IF NOT EXISTS submissions (
+    submission_id TEXT PRIMARY KEY,
+    name TEXT,
+    distance REAL,
+    activity_date TEXT,
+    image TEXT,
+    timestamp TEXT
 )
-
-# Participants sheet (cached for 60s)
-participants_df = conn.read(
-    spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-    ttl=60
-)
-
-# Safeguards: ensure correct columns exist
-if df.empty or "name" not in df.columns:
-    df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
-
-if participants_df.empty or "Name" not in participants_df.columns:
-    participants_df = pd.DataFrame(columns=["Name", "Year of Grad", "CCA", "Timestamp"])
+''')
+conn.commit()
 
 # =========================
-# UI HEADER
+# FUNCTIONS
 # =========================
-st.image("cedar70000km3.png", width="stretch")
+def add_submission(submission_id, name, distance, activity_date, image_path):
+    c.execute("""
+        INSERT INTO submissions
+        (submission_id, name, distance, activity_date, image, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        submission_id,
+        name,
+        distance,
+        activity_date,
+        image_path,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ))
+    conn.commit()
+
+def get_data():
+    return pd.read_sql("SELECT * FROM submissions", conn)
+
+# =========================
+# UI
+# =========================
+st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
+
 st.markdown("""
 **🎯 Goal:** 70,000 km  
 **📅 Period:** 1 June 2026 → 1 Feb 2027  
+
+Let’s achieve this together 💜
 """)
 
 # =========================
-# PARTICIPANT CHECK
+# SUBMISSION FORM
 # =========================
-st.header("👟 Participant Check")
+st.header("📥 Submit Your Distance")
 
-is_new = st.radio(
-    "Are you a new participant?",
-    ["Select an option...", "No, I have registered", "Yes, I am new"],
-    index=0
+name = st.text_input("Enter your name")
+
+activity_date = st.date_input(
+    "Date of activity",
+    min_value=START_DATE,
+    max_value=END_DATE
 )
 
-# Flag to track if a submission was made
-submission_done = False
+distance = st.number_input("Distance covered (km)", min_value=0.1, step=0.1)
 
-if is_new == "Yes, I am new":
-    # Registration form
-    st.subheader("📝 Register New Participant")
-    new_name = st.text_input("Full Name")
-    new_grad_year = st.text_input("Year of Grad")  # ✅ match sheet header
-    new_cca = st.text_input("CCA")
+uploaded_file = st.file_uploader(
+    "Upload screenshot (Strava or tracker)",
+    type=["jpg", "png", "jpeg"]
+)
 
-    if st.button("Register"):
-        if not new_name or not new_grad_year or not new_cca:
-            st.warning("Please fill in all fields")
-            st.stop()
+if st.button("Submit"):
 
-        if not participants_df.empty:
-            if new_name.lower() in participants_df["Name"].str.lower().tolist():
-                st.error("This participant is already registered")
-                st.stop()
+    # =========================
+    # VALIDATION
+    # =========================
+    if not name:
+        st.warning("Please enter your name.")
+        st.stop()
 
-        new_participant = pd.DataFrame([{
-            "Name": new_name,
-            "Year of Grad": new_grad_year,   # ✅ match sheet header
-            "CCA": new_cca,
-            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # ✅ match sheet header
-        }])
+    if distance <= 0:
+        st.warning("Distance must be greater than 0.")
+        st.stop()
 
-        updated_participants = pd.concat([participants_df, new_participant], ignore_index=True)
+    if distance > MAX_DISTANCE:
+        st.warning(f"Distance too large (> {MAX_DISTANCE} km). Please verify.")
+        st.stop()
 
-        # 🔎 Debug: show what will be written
-        st.write("Updated participants dataframe:", updated_participants)
+    # ✅ Prevent duplicate submission (same name + same date)
+    existing = c.execute("""
+        SELECT * FROM submissions
+        WHERE name=? AND activity_date=?
+    """, (name.strip().lower(), activity_date.strftime("%Y-%m-%d"))).fetchone()
 
-        conn.update(
-            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-            data=updated_participants
-        )
+    if existing:
+        st.error("❌ You have already submitted for this date.")
+        st.stop()
 
-        st.success(f"✅ {new_name} registered successfully!")
+    # =========================
+    # GENERATE UNIQUE ID
+    # =========================
+    submission_id = str(uuid.uuid4())[:8]
 
-        # Reload participants immediately (force fresh read)
-        participants_df = conn.read(
-            spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-            ttl=0
-        )
+    # =========================
+    # SAVE IMAGE SAFELY
+    # =========================
+    image_path = None
 
-        # Submission form immediately after registration
-        name = new_name
-        activity_date = st.date_input("Date of activity", min_value=START_DATE, max_value=END_DATE)
-        distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
+    if uploaded_file:
+        file_ext = uploaded_file.name.split(".")[-1]
+        filename = f"{submission_id}.{file_ext}"
+        image_path = os.path.join(UPLOAD_FOLDER, filename)
 
-        if st.button("Submit Distance"):
-            if distance > MAX_DISTANCE:
-                st.warning(f"Max {MAX_DISTANCE} km allowed")
-                st.stop()
+        with open(image_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-            new_data = pd.DataFrame([{
-                "submission_id": str(uuid.uuid4())[:8],
-                "name": name,
-                "distance": distance,
-                "activity_date": activity_date.strftime("%Y-%m-%d"),
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }])
-
-            updated_df = pd.concat([df, new_data], ignore_index=True)
-            conn.update(
-                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-                data=updated_df
-            )
-
-            st.success("✅ Submission added!")
-
-            # Reload submissions immediately
-            df = conn.read(
-                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-                ttl=0
-            )
-            submission_done = True
-
-elif is_new == "No, I have registered":
-    # Submission form
-    st.header("📥 Submit Your Distance")
-    name = st.text_input("Enter your name")
-    activity_date = st.date_input("Date of activity", min_value=START_DATE, max_value=END_DATE)
-    distance = st.number_input("Distance (km)", min_value=0.1, step=0.1)
-
-    if st.button("Submit"):
-        if not name:
-            st.warning("Enter your name")
-            st.stop()
-
-        if distance > MAX_DISTANCE:
-            st.warning(f"Max {MAX_DISTANCE} km allowed")
-            st.stop()
-
-        if not participants_df.empty:
-            valid_names = participants_df["Name"].str.lower().tolist()
-            if name.lower() not in valid_names:
-                st.error("Name not found in participants list")
-                st.stop()
-
-        if not df.empty:
-            duplicate = df[
-                (df["name"].str.lower() == name.lower()) &
-                (df["activity_date"] == activity_date.strftime("%Y-%m-%d"))
-            ]
-            if not duplicate.empty:
-                st.error("Already submitted for this date")
-                st.stop()
-
-        new_data = pd.DataFrame([{
-            "submission_id": str(uuid.uuid4())[:8],
-            "name": name,
-            "distance": distance,
-            "activity_date": activity_date.strftime("%Y-%m-%d"),
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }])
-
-        updated_df = pd.concat([df, new_data], ignore_index=True)
-        conn.update(
-            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-            data=updated_df
-        )
-
-        st.success("✅ Submission added!")
-
-        # Reload submissions immediately
-        df = conn.read(
-            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-            ttl=0
-        )
-        submission_done = True
-
-# =========================
-# SHOW PROGRESS + LEADERBOARD ONLY AFTER SUBMISSION
-# =========================
-if submission_done:
-    st.header("📊 Progress & Leaderboard")
-
-    merged_df = df.merge(
-        participants_df[["Name", "Year of Grad", "CCA"]],
-        left_on="name",
-        right_on="Name",
-        how="left"
+    # =========================
+    # SAVE TO DATABASE
+    # =========================
+    add_submission(
+        submission_id,
+        name.strip(),
+        float(distance),
+        activity_date.strftime("%Y-%m-%d"),
+        image_path
     )
 
-    # Leaderboard
-    leaderboard = merged_df.groupby(["Name", "Year of Grad", "CCA"])["distance"].sum().sort_values(ascending=False)
-    leaderboard_df = leaderboard.reset_index().rename(columns={"distance": "distance in km"}).head(10)
+    st.success(f"✅ Submission recorded! ID: {submission_id}")
+
+# =========================
+# DISPLAY DATA
+# =========================
+st.header("📊 Progress Overview")
+
+df = get_data()
+
+if not df.empty:
+
+    total_km = df["distance"].sum()
+
+    st.metric("Total Distance Covered", f"{total_km:.2f} km")
+
+    progress = min(total_km / GOAL_KM, 1.0)
+    st.progress(progress)
+
+    st.write(f"Progress: {total_km:.2f} / {GOAL_KM} km")
+
+    # =========================
+    # LEADERBOARD
+    # =========================
     st.subheader("🏆 Leaderboard")
-    st.dataframe(leaderboard_df)
 
-    # Recent submissions
-    recent_df = merged_df.sort_values(by="timestamp", ascending=False)[
-        ["submission_id", "Name", "Year of Grad", "CCA", "distance", "activity_date"]
-    ].rename(columns={"distance": "distance in km"}).head(10)
+    leaderboard = (
+        df.groupby("name")["distance"]
+        .sum()
+        .sort_values(ascending=False)
+        .reset_index()
+    )
+
+    st.dataframe(leaderboard.head(10))
+
+    # =========================
+    # RECENT SUBMISSIONS
+    # =========================
     st.subheader("🕒 Recent Submissions")
-    st.dataframe(recent_df)
 
-    # 🎯 Milestones
-    st.subheader("🎯 Milestones")
-    total_distance = df["distance"].sum()
-    milestones = [10000, 25000, 50000, GOAL_KM]
-    for m in milestones:
-        if total_distance >= m:
-            st.success(f"✅ Milestone reached: {m:,} km")
-        else:
-            st.info(f"Next milestone: {m:,} km (currently {total_distance:,} km)")
-            break
+    st.dataframe(
+        df.sort_values(by="timestamp", ascending=False)[
+            ["submission_id", "name", "distance", "activity_date"]
+        ].head(10)
+    )
 
-    # 🍩 Donut Visualization (Plotly)
-    progress = total_distance
-    remaining = max(GOAL_KM - progress, 0)
+    # =========================
+    # DAILY TREND
+    # =========================
+    st.subheader("📈 Daily Distance Trend")
 
-    fig = go.Figure(data=[go.Pie(
-        labels=[f"Completed {progress:,} km", f"Remaining {remaining:,} km"],
-        values=[progress, remaining],
-        hole=.4,
-        marker=dict(colors=["#4CAF50", "#FF9800"])
-    )])
-    fig.update_layout(showlegend=True)
+    df["activity_date"] = pd.to_datetime(df["activity_date"])
+    daily = df.groupby("activity_date")["distance"].sum()
 
-    st.subheader("🍩 Overall Progress")
-    st.plotly_chart(fig, use_container_width=True)
+    st.line_chart(daily)
+
+    # =========================
+    # SHOW SOME IMAGES
+    # =========================
+    st.subheader("📸 Latest Activity Screenshots")
+
+    recent_images = df[df["image"].notnull()].tail(5)
+
+    for _, row in recent_images.iterrows():
+        st.image(row["image"], caption=f"{row['name']} - {row['distance']} km", width=300)
+
+else:
+    st.info("No submissions yet. Be the first!")
 
 # =========================
-# ADMIN PANEL
+# TIMELINE
 # =========================
-st.header("🔐 Admin Panel")
-admin_pw = st.text_input("Enter admin password", type="password")
+st.header("📅 Campaign Timeline")
 
-if admin_pw == ADMIN_PASSWORD:
-    st.success("Admin access granted")
+today = date.today()
 
-    # Delete submissions by ID
-    st.subheader("🗑️ Delete Submission")
-    if not df.empty:
-        submission_id_to_delete = st.selectbox("Select submission ID to delete", df["submission_id"].tolist())
-        if st.button("Delete Submission"):
-            df = df[df["submission_id"] != submission_id_to_delete]
-            conn.update(
-                spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-                data=df
-            )
-            st.success(f"Submission {submission_id_to_delete} deleted!")
-            st.rerun()
+if today < START_DATE:
+    st.info("Event has not started yet.")
 
-    # NEW: Delete all submissions
-    st.subheader("🗑️ Delete ALL Submissions")
-    if st.button("Delete All Submissions"):
-        df = pd.DataFrame(columns=["submission_id", "name", "distance", "activity_date", "timestamp"])
-        conn.update(
-            spreadsheet=st.secrets["connections"]["gsheets"]["spreadsheet"],
-            data=df
-        )
-        st.success("🚮 All submissions deleted!")
-        st.rerun()
+elif today > END_DATE:
+    st.success("🎉 Event completed!")
 
-    # Delete participants
-    st.subheader("🗑️ Delete Participant")
-    if not participants_df.empty:
-        participant_to_delete = st.selectbox("Select participant to delete", participants_df["Name"].tolist())
-        if st.button("Delete Participant"):
-            participants_df = participants_df[participants_df["Name"] != participant_to_delete]
-            conn.update(
-                spreadsheet=st.secrets["connections"]["gsheets"]["participants_spreadsheet"],
-                data=participants_df
-            )
-            st.success(f"Participant {participant_to_delete} deleted!")
-            st.rerun()
+else:
+    total_days = (END_DATE - START_DATE).days
+    days_passed = (today - START_DATE).days
 
+    st.progress(days_passed / total_days)
+    st.write(f"Day {days_passed} of {total_days}")
