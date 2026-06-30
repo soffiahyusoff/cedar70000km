@@ -132,11 +132,16 @@ else:
     # ✅ Sort once
     participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
 
+
+    if "selected_display" not in st.session_state:
+        st.session_state["selected_display"] = None
+    
     selected_display = st.selectbox(
         "Select your name",
         participants_df_sorted["display"],
         index=None,
-        placeholder="Start typing to search..."
+        placeholder="Start typing to search...",
+        key="selected_display"
     )
 
     # ✅ Handle no selection (important!)
