@@ -304,15 +304,7 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 if st.button("Submit"):
 
     if not name.strip():
-        st.warning("Please enter or select a participant name.")
-        st.stop()
-
-    if not grad_year.strip():
-        st.warning("Please enter or select graduation year.")
-        st.stop()
-
-    if not cca.strip():
-        st.warning("Please enter or select CCA.")
+        st.warning("Please select a participant.")
         st.stop()
 
     if distance <= 0:
@@ -322,10 +314,6 @@ if st.button("Submit"):
     if distance > MAX_DISTANCE:
         st.warning(f"Distance too large (> {MAX_DISTANCE} km). Please verify.")
         st.stop()
-
-    # Create participant if needed
-    if participant_mode == "Add new participant":
-        selected_participant_id = get_or_create_participant(name, grad_year, cca)
 
     # Prevent duplicate submission for same participant on same date
     existing = c.execute("""
@@ -352,7 +340,6 @@ if st.button("Submit"):
 
     st.success(f"✅ Submission recorded! ID: {submission_id}")
     st.rerun()
-
 # =========================
 # DISPLAY DATA
 # =========================
