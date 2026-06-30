@@ -129,41 +129,26 @@ else:
         participants_df["cca"] + ")"
     )
 
-    # ✅ Sort once
-    participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
+# ✅ Sort once
+participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
 
-
-    if "selected_display" not in st.session_state:
-        st.session_state["selected_display"] = None
-    
-      selected_display = st.selectbox(
-        "Select your name",
-        participants_df_sorted["display"],
-        index=None,
-        placeholder="Start typing to search..."
-    )
-    
-    # ✅ Only proceed if something is selected
-    if selected_display:
-        filtered_participant = participants_df_sorted[
-            participants_df_sorted["display"] == selected_display
-        ]
-    
-        if not filtered_participant.empty:
-            participant_row = filtered_participant.iloc[0]
-            selected_participant_id = participant_row["participant_id"]
-
-    participant_row = filtered_participant.iloc[0]
-
-    selected_participant_id = participant_row["participant_id"]
-
-activity_date = st.date_input(
-    "Date of activity",
-    min_value=START_DATE,
-    max_value=END_DATE
+# ✅ Dropdown
+selected_display = st.selectbox(
+    "Select your name",
+    participants_df_sorted["display"]
 )
 
-distance = st.number_input("Distance (km)", min_value=0.1)
+# ✅ Lookup AFTER selection
+filtered_participant = participants_df_sorted[
+    participants_df_sorted["display"] == selected_display
+]
+
+if filtered_participant.empty:
+    st.warning("⚠️ Something went wrong. Please reselect your name.")
+    st.stop()
+
+participant_row = filtered_participant.iloc[0]
+selected_participant_id = participant_row["participant_id"]
 
 
 # ✅ ✅ MOVE SUBMIT BUTTON HERE
