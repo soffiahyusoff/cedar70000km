@@ -18,7 +18,6 @@ MAX_DISTANCE = 100
 conn = sqlite3.connect("challenge.db", check_same_thread=False)
 c = conn.cursor()
 
-# Participants table
 c.execute("""
 CREATE TABLE IF NOT EXISTS participants (
     participant_id TEXT PRIMARY KEY,
@@ -31,15 +30,13 @@ CREATE TABLE IF NOT EXISTS participants (
 )
 """)
 
-# Distance logs table
 c.execute("""
 CREATE TABLE IF NOT EXISTS distance_logs (
     submission_id TEXT PRIMARY KEY,
     participant_id TEXT,
     distance REAL,
     activity_date TEXT,
-    timestamp TEXT,
-    FOREIGN KEY (participant_id) REFERENCES participants(participant_id)
+    timestamp TEXT
 )
 """)
 conn.commit()
@@ -60,7 +57,7 @@ def add_participant(name, grad_year, cca):
     grad_year_clean = clean_text(grad_year)
 
     c.execute("""
-        INSERT INTO participants
+        INSERT OR IGNORE INTO participants
         (participant_id, name, grad_year, cca, name_key, cca_key)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
@@ -72,39 +69,13 @@ def add_participant(name, grad_year, cca):
         key_text(cca_clean)
     ))
     conn.commit()
-    return participant_id
-
-def get_or_create_participant(name, grad_year, cca):
-    name_clean = clean_text(name)
-    grad_year_clean = clean_text(grad_year)
-    cca_clean = clean_text(cca)
-
-    row = c.execute("""
-        SELECT participant_id
-        FROM participants
-        WHERE name_key = ? AND grad_year = ? AND cca_key = ?
-    """, (
-        key_text(name_clean),
-        grad_year_clean,
-        key_text(cca_clean)
-    )).fetchone()
-
-    if row:
-        return row[0]
-
-    return add_participant(name_clean, grad_year_clean, cca_clean)
 
 def get_participants():
-    return pd.read_sql("""
-        SELECT participant_id, name, grad_year, cca
-        FROM participants
-        ORDER BY name, grad_year, cca
-    """, conn)
+    return pd.read_sql("SELECT * FROM participants", conn)
 
 def add_submission(submission_id, participant_id, distance, activity_date):
     c.execute("""
         INSERT INTO distance_logs
-        (submission_id, participant_id, distance, activity_date, timestamp)
         VALUES (?, ?, ?, ?, ?)
     """, (
         submission_id,
@@ -117,18 +88,10 @@ def add_submission(submission_id, participant_id, distance, activity_date):
 
 def get_data():
     return pd.read_sql("""
-        SELECT
-            d.submission_id,
-            p.participant_id,
-            p.name,
-            p.grad_year,
-            p.cca,
-            d.distance,
-            d.activity_date,
-            d.timestamp
+        SELECT d.*, p.name, p.grad_year, p.cca
         FROM distance_logs d
         JOIN participants p
-            ON d.participant_id = p.participant_id
+        ON d.participant_id = p.participant_id
     """, conn)
 
 # =========================
@@ -139,8 +102,6 @@ st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
 st.markdown("""
 **🎯 Goal:** 70,000 km  
 **📅 Period:** 1 July 2026 → 1 March 2027  
-
-Let’s achieve this together 💜
 """)
 
 # =========================
@@ -155,42 +116,24 @@ df = get_data()
 st.header("📥 Submit Your Distance")
 
 selected_participant_id = None
-name = ""
-grad_year = ""
-cca = ""
 
 if participants_df.empty:
     st.warning("No participants available. Please contact admin to add participants.")
+else:
+    # ✅ SINGLE DROPDOWN (much safer)
+    participants_df["display"] = (
+        participants_df["name"] + " (" +
+        participants_df["grad_year"] + ", " +
+        participants_df["cca"] + ")"
+    )
 
-# ✅ Dropdown selection ONLY
-names = sorted(participants_df["name"].dropna().unique().tolist())
-selected_name = st.selectbox("Name", names)
+    selected_display = st.selectbox("Select your name", participants_df["display"])
 
-filtered_years = participants_df[
-    participants_df["name"] == selected_name
-]["grad_year"].dropna().unique().tolist()
-filtered_years = sorted(filtered_years, reverse=True)
+    participant_row = participants_df[
+        participants_df["display"] == selected_display
+    ].iloc[0]
 
-selected_grad_year = st.selectbox("Graduation Year", filtered_years)
-
-filtered_ccas = participants_df[
-    (participants_df["name"] == selected_name) &
-    (participants_df["grad_year"] == selected_grad_year)
-]["cca"].dropna().unique().tolist()
-filtered_ccas = sorted(filtered_ccas)
-
-selected_cca = st.selectbox("CCA", filtered_ccas)
-
-participant_row = participants_df[
-    (participants_df["name"] == selected_name) &
-    (participants_df["grad_year"] == selected_grad_year) &
-    (participants_df["cca"] == selected_cca)
-].iloc[0]
-
-selected_participant_id = participant_row["participant_id"]
-name = participant_row["name"]
-grad_year = participant_row["grad_year"]
-cca = participant_row["cca"]
+    selected_participant_id = participant_row["participant_id"]
 
 activity_date = st.date_input(
     "Date of activity",
@@ -198,131 +141,77 @@ activity_date = st.date_input(
     max_value=END_DATE
 )
 
-distance = st.number_input(
-    "Distance covered (km)",
-    min_value=0.1,
-    step=0.1
-)
+distance = st.number_input("Distance (km)", min_value=0.1)
 
 # =========================
-# ADMIN ACCESS (HIDDEN)
+# ADMIN PANEL (HIDDEN)
 # =========================
 st.markdown("---")
-
 admin_password = st.text_input("🔐 Admin Access", type="password")
 
 if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 
-    # =========================
-    # ADMIN PANEL
-    # =========================
     st.header("🔧 Admin Controls")
 
-    # =========================
-    # ✅ 1. ADD PARTICIPANTS
-    # =========================
-    st.subheader("🧑‍🤝‍🧑 Add Participants")
+    # ✅ Add participants
+    st.subheader("➕ Add Participants")
 
     with st.expander("Add new participant"):
-
-        reg_name = st.text_input("Name", key="admin_name")
-        reg_year = st.text_input("Graduation Year", key="admin_year")
-        reg_cca = st.text_input("CCA", key="admin_cca")
+        name = st.text_input("Name", key="admin_name")
+        year = st.text_input("Graduation Year")
+        cca = st.text_input("CCA")
 
         if st.button("Add Participant"):
-            if not reg_name or not reg_year or not reg_cca:
-                st.warning("All fields required")
-            else:
-                get_or_create_participant(reg_name, reg_year, reg_cca)
-                st.success("✅ Participant added")
+            if name and year and cca:
+                add_participant(name, year, cca)
+                st.success("✅ Added")
                 st.rerun()
+            else:
+                st.warning("Fill all fields")
 
-    # =========================
-    # ✅ 2. VIEW ENTRIES
-    # =========================
+    # ✅ View + delete
     if not df.empty:
+        st.subheader("🧾 Entries")
+        st.dataframe(df)
 
-        st.subheader("🧾 All Distance Entries")
-
-        st.dataframe(
-            df[["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]],
-            use_container_width=True
-        )
-
-        # =========================
-        # ✅ 3. DELETE SINGLE ENTRY
-        # =========================
-        st.subheader("🗑 Delete Individual Entry")
-
-        delete_id = st.text_input("Enter submission_id", key="delete_id")
+        delete_id = st.text_input("Submission ID to delete")
 
         if st.button("Delete Entry"):
-            if delete_id:
-                c.execute("""
-                    DELETE FROM distance_logs
-                    WHERE submission_id = ?
-                """, (delete_id,))
-                conn.commit()
-                st.success("✅ Entry deleted")
-                st.rerun()
-            else:
-                st.warning("Enter a valid submission_id")
-
-        # =========================
-        # ✅ 4. RESET ALL ENTRIES
-        # =========================
-        st.subheader("⚠️ Reset All Distance Entries")
-
-        confirm = st.checkbox("I confirm I want to delete ALL entries")
-
-        if st.button("Delete ALL entries") and confirm:
-            c.execute("DELETE FROM distance_logs")
+            c.execute("DELETE FROM distance_logs WHERE submission_id=?", (delete_id,))
             conn.commit()
-            st.success("✅ All entries cleared")
+            st.success("✅ Deleted")
             st.rerun()
 
-    else:
-        st.info("No entries available.")
+        if st.button("⚠️ Delete ALL Entries"):
+            c.execute("DELETE FROM distance_logs")
+            conn.commit()
+            st.success("✅ All cleared")
+            st.rerun()
 
-
-# 👉 NOTHING else is shown if password is wrong
 # =========================
 # SUBMIT
 # =========================
-
-submit_clicked = st.button("Submit")
-
-if submit_clicked:
+if st.button("Submit"):
 
     if participants_df.empty:
-        st.error("🚫 No participants available. Please contact admin.")
-        st.stop()
-
-
-    if not name.strip():
-        st.warning("Please select a participant.")
+        st.error("No participants available.")
         st.stop()
 
     if distance <= 0:
-        st.warning("Distance must be greater than 0.")
+        st.warning("Enter valid distance")
         st.stop()
 
     if distance > MAX_DISTANCE:
-        st.warning(f"Distance too large (> {MAX_DISTANCE} km). Please verify.")
+        st.warning("Distance too large")
         st.stop()
 
-    # Prevent duplicate submission for same participant on same date
     existing = c.execute("""
-        SELECT 1
-        FROM distance_logs
-        WHERE participant_id = ? AND activity_date = ?
-    """, (
-        selected_participant_id,
-        activity_date.strftime("%Y-%m-%d")
-    )).fetchone()
+        SELECT 1 FROM distance_logs
+        WHERE participant_id=? AND activity_date=?
+    """, (selected_participant_id, activity_date.strftime("%Y-%m-%d"))).fetchone()
 
     if existing:
-        st.error("❌ This participant has already submitted for this date.")
+        st.error("Already submitted today")
         st.stop()
 
     submission_id = str(uuid.uuid4())[:8]
@@ -330,73 +219,42 @@ if submit_clicked:
     add_submission(
         submission_id,
         selected_participant_id,
-        float(distance),
+        distance,
         activity_date.strftime("%Y-%m-%d")
     )
 
-    st.success(f"✅ Submission recorded! ID: {submission_id}")
+    st.success("✅ Submitted!")
     st.rerun()
+
 # =========================
-# DISPLAY DATA
+# DISPLAY
 # =========================
-st.header("📊 Progress Overview")
+st.header("📊 Progress")
 
 if not df.empty:
-    total_km = df["distance"].astype(float).sum()
+    total_km = df["distance"].sum()
+    st.metric("Total KM", f"{total_km:.2f}")
+    st.progress(min(total_km / GOAL_KM, 1.0))
 
-    st.metric("Total Distance Covered", f"{total_km:.2f} km")
-
-    progress = min(total_km / GOAL_KM, 1.0)
-    st.progress(progress)
-
-    st.write(f"Progress: {total_km:.2f} / {GOAL_KM} km")
-
-    # Leaderboard
     st.subheader("🏆 Leaderboard")
+    leaderboard = df.groupby(["name", "grad_year", "cca"])["distance"].sum().sort_values(ascending=False)
+    st.dataframe(leaderboard.reset_index())
 
-    leaderboard = (
-        df.groupby(["name", "grad_year", "cca"])["distance"]
-        .sum()
-        .sort_values(ascending=False)
-        .reset_index()
-    )
-
-    st.dataframe(leaderboard.head(10), use_container_width=True)
-
-    # Recent submissions
-    st.subheader("🕒 Recent Submissions")
-
-    st.dataframe(
-        df.sort_values(by="timestamp", ascending=False)[
-            ["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]
-        ].head(10),
-        use_container_width=True
-    )
-
-    # Daily trend
-    st.subheader("📈 Daily Distance Trend")
-
-    trend_df = df.copy()
-    trend_df["activity_date"] = pd.to_datetime(trend_df["activity_date"])
-    daily = trend_df.groupby("activity_date")["distance"].sum()
-
-    st.line_chart(daily)
 else:
-    st.info("No submissions yet. Be the first!")
+    st.info("No data yet.")
 
 # =========================
 # TIMELINE
 # =========================
-st.header("📅 Campaign Timeline")
+st.header("📅 Timeline")
 
 today = date.today()
 
 if today < START_DATE:
-    st.info("Event has not started yet.")
+    st.info("Event not started")
 elif today > END_DATE:
-    st.success("🎉 Event completed!")
+    st.success("Event completed")
 else:
-    total_days = (END_DATE - START_DATE).days
-    days_passed = (today - START_DATE).days
-    st.progress(days_passed / total_days)
-    st.write(f"Day {days_passed} of {total_days}")
+    progress_days = (today - START_DATE).days / (END_DATE - START_DATE).days
+    st.progress(progress_days)
+``
