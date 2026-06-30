@@ -94,7 +94,7 @@ def get_data():
 # =========================
 # HEADER
 # =========================
-st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
+st.title("🏃‍♀️‍➡️ Cedar Girls 70th Anniversary Distance Challenge")
 
 st.markdown("""
 **🎯 Goal:** 70,000 km  
