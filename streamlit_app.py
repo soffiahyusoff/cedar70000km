@@ -170,6 +170,24 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
             else:
                 st.warning("Fill all fields")
 
+     =========================
+    # ✅ VIEW PARTICIPANTS (ADMIN ONLY)
+    # =========================
+    st.subheader("📋 Participant List")
+    
+    if not participants_df.empty:
+        display_df = participants_df[["name", "grad_year", "cca"]].copy()
+    
+        st.dataframe(
+            display_df.sort_values(by=["name", "grad_year"]),
+            use_container_width=True
+        )
+    
+        st.write(f"👥 Total Participants: {len(display_df)}")
+    
+    else:
+        st.info("No participants found.")
+
     # ✅ View + delete
     if not df.empty:
         st.subheader("🧾 Entries")
