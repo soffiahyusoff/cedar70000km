@@ -1,4 +1,3 @@
-
 import streamlit as st
 import sqlite3
 import pandas as pd
@@ -53,9 +52,6 @@ def key_text(value):
 
 def add_participant(name, grad_year, cca):
     participant_id = str(uuid.uuid4())[:8]
-    name_clean = clean_text(name)
-    cca_clean = clean_text(cca)
-    grad_year_clean = clean_text(grad_year)
 
     c.execute("""
         INSERT OR IGNORE INTO participants
@@ -63,11 +59,11 @@ def add_participant(name, grad_year, cca):
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
         participant_id,
-        name_clean,
-        grad_year_clean,
-        cca_clean,
-        key_text(name_clean),
-        key_text(cca_clean)
+        name.strip(),
+        grad_year.strip(),
+        cca.strip(),
+        name.strip().lower(),
+        cca.strip().lower()
     ))
     conn.commit()
 
@@ -96,7 +92,7 @@ def get_data():
     """, conn)
 
 # =========================
-# UI HEADER
+# HEADER
 # =========================
 st.title("🏃‍♀️ Cedar Girls 70th Anniversary Distance Challenge")
 
@@ -112,52 +108,51 @@ participants_df = get_participants()
 df = get_data()
 
 # =========================
-# FORM INPUT
+# FORM
 # =========================
 st.header("📥 Submit Your Distance")
 
 selected_participant_id = None
 
 if participants_df.empty:
-    st.warning("No participants available. Please contact admin to add participants.")
+    st.warning("No participants available. Please contact admin.")
 
 else:
-    # ✅ Create display column
     participants_df["display"] = (
         participants_df["name"] + " (" +
         participants_df["grad_year"] + ", " +
         participants_df["cca"] + ")"
     )
 
-# ✅ Sort once
-participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
+    participants_df = participants_df.sort_values(by=["name", "grad_year"])
 
-# ✅ Dropdown
-selected_display = st.selectbox(
-    "Select your name",
-    participants_df_sorted["display"]
+    selected_display = st.selectbox(
+        "Select your name",
+        participants_df["display"]
+    )
+
+    participant_row = participants_df[
+        participants_df["display"] == selected_display
+    ].iloc[0]
+
+    selected_participant_id = participant_row["participant_id"]
+
+    st.caption(f"✅ Selected: {selected_display}")
+
+# ✅ Inputs ALWAYS present
+activity_date = st.date_input(
+    "Date of activity",
+    min_value=START_DATE,
+    max_value=END_DATE
 )
 
-# ✅ Lookup AFTER selection
-filtered_participant = participants_df_sorted[
-    participants_df_sorted["display"] == selected_display
-]
+distance = st.number_input("Distance (km)", min_value=0.1)
 
-if filtered_participant.empty:
-    st.warning("⚠️ Something went wrong. Please reselect your name.")
-    st.stop()
-
-participant_row = filtered_participant.iloc[0]
-selected_participant_id = participant_row["participant_id"]
-
-
-# ✅ ✅ MOVE SUBMIT BUTTON HERE
-submit_clicked = st.button("Submit")
-
-if submit_clicked:
+# ✅ Submit button placed correctly
+if st.button("Submit"):
 
     if participants_df.empty:
-        st.error("🚫 No participants available.")
+        st.error("No participants available.")
         st.stop()
 
     if distance <= 0:
@@ -165,7 +160,7 @@ if submit_clicked:
         st.stop()
 
     if distance > MAX_DISTANCE:
-        st.warning(f"Distance too large (> {MAX_DISTANCE} km).")
+        st.warning("Distance too large.")
         st.stop()
 
     existing = c.execute("""
@@ -192,9 +187,6 @@ if submit_clicked:
     st.success("✅ Submitted!")
     st.rerun()
 
-
-
-
 # =========================
 # ADMIN PANEL (HIDDEN)
 # =========================
@@ -205,9 +197,8 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 
     st.header("🔧 Admin Controls")
 
-    # ✅ Add participants
-    st.subheader("➕ Add Participants")
-    with st.expander("Add new participant"):
+    # Add participants
+    with st.expander("➕ Add participant"):
         name = st.text_input("Name", key="admin_name")
         year = st.text_input("Graduation Year")
         cca = st.text_input("CCA")
@@ -217,86 +208,57 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
                 add_participant(name, year, cca)
                 st.success("✅ Added")
                 st.rerun()
-            else:
-                st.warning("Fill all fields")
 
-    # ✅ View participant list
+    # Participant list
     st.subheader("📋 Participant List")
     if not participants_df.empty:
-        st.dataframe(
-            participants_df[["name", "grad_year", "cca"]],
-            use_container_width=True
-        )
-    else:
-        st.info("No participants found.")
+        st.dataframe(participants_df[["name", "grad_year", "cca"]])
 
-    # ✅ ✅ EDIT PARTICIPANT (NOW HIDDEN PROPERLY)
+    # Edit participants
     st.subheader("✏️ Edit Participant")
 
     if not participants_df.empty:
-        participants_df["display"] = (
-            participants_df["name"] + " (" +
-            participants_df["grad_year"] + ", " +
-            participants_df["cca"] + ")"
-        )
+        selected_edit = st.selectbox("Select participant", participants_df["display"], key="edit")
 
-        selected_edit = st.selectbox(
-            "Select participant to edit",
-            participants_df["display"],
-            key="edit_select"
-        )
+        row = participants_df[participants_df["display"] == selected_edit].iloc[0]
 
-        row = participants_df[
-            participants_df["display"] == selected_edit
-        ].iloc[0]
+        edit_name = st.text_input("Name", value=row["name"])
+        edit_year = st.text_input("Year", value=row["grad_year"])
+        edit_cca = st.text_input("CCA", value=row["cca"])
 
-        edit_name = st.text_input("Update Name", value=row["name"], key="edit_name")
-        edit_year = st.text_input("Update Graduation Year", value=row["grad_year"], key="edit_year")
-        edit_cca = st.text_input("Update CCA", value=row["cca"], key="edit_cca")
+        if st.button("Update"):
+            c.execute("""
+                UPDATE participants
+                SET name=?, grad_year=?, cca=?, name_key=?, cca_key=?
+                WHERE participant_id=?
+            """, (
+                edit_name.strip(),
+                edit_year.strip(),
+                edit_cca.strip(),
+                edit_name.strip().lower(),
+                edit_cca.strip().lower(),
+                row["participant_id"]
+            ))
+            conn.commit()
+            st.success("✅ Updated")
+            st.rerun()
 
-        if st.button("Update Participant"):
-            if edit_name and edit_year and edit_cca:
-                c.execute("""
-                    UPDATE participants
-                    SET name=?, grad_year=?, cca=?, name_key=?, cca_key=?
-                    WHERE participant_id=?
-                """, (
-                    edit_name.strip(),
-                    edit_year.strip(),
-                    edit_cca.strip(),
-                    edit_name.strip().lower(),
-                    edit_cca.strip().lower(),
-                    row["participant_id"]
-                ))
-                conn.commit()
-                st.success("✅ Participant updated")
-                st.rerun()
-            else:
-                st.warning("All fields required")
-
-    # ✅ View + delete entries (your existing section)
+    # Delete entries
     if not df.empty:
-        st.subheader("🧾 Entries")
-        st.dataframe(df)
-
-        delete_id = st.text_input("Submission ID to delete")
+        delete_id = st.text_input("Delete submission ID")
 
         if st.button("Delete Entry"):
             c.execute("DELETE FROM distance_logs WHERE submission_id=?", (delete_id,))
             conn.commit()
             st.success("✅ Deleted")
-            st.rerun()
 
-        if st.button("⚠️ Delete ALL Entries"):
+        if st.button("⚠️ Delete ALL"):
             c.execute("DELETE FROM distance_logs")
             conn.commit()
-            st.success("✅ All cleared")
-            st.rerun()
-
-
+            st.success("✅ Cleared all")
 
 # =========================
-# DISPLAY
+# PROGRESS
 # =========================
 st.header("📊 Progress")
 
@@ -304,11 +266,6 @@ if not df.empty:
     total_km = df["distance"].sum()
     st.metric("Total KM", f"{total_km:.2f}")
     st.progress(min(total_km / GOAL_KM, 1.0))
-
-    st.subheader("🏆 Leaderboard")
-    leaderboard = df.groupby(["name", "grad_year", "cca"])["distance"].sum().sort_values(ascending=False)
-    st.dataframe(leaderboard.reset_index())
-
 else:
     st.info("No data yet.")
 
@@ -326,4 +283,3 @@ elif today > END_DATE:
 else:
     progress_days = (today - START_DATE).days / (END_DATE - START_DATE).days
     st.progress(progress_days)
-
