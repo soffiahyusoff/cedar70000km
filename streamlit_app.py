@@ -154,7 +154,7 @@ else:
 
     participant_row = filtered_participant.iloc[0]
 
-    selected_participant_id = participant_row["participant_id"]"]
+    selected_participant_id = participant_row["participant_id"]
 
 activity_date = st.date_input(
     "Date of activity",
