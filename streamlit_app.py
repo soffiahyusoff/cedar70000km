@@ -120,28 +120,41 @@ selected_participant_id = None
 
 if participants_df.empty:
     st.warning("No participants available. Please contact admin to add participants.")
+
 else:
-    # ✅ SINGLE DROPDOWN (much safer)
+    # ✅ Create display column
     participants_df["display"] = (
         participants_df["name"] + " (" +
         participants_df["grad_year"] + ", " +
         participants_df["cca"] + ")"
     )
-    # ✅ Sort alphabetically by name
+
+    # ✅ Sort once
     participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
-    
+
     selected_display = st.selectbox(
-       "Select your name",
+        "Select your name",
         participants_df_sorted["display"],
         index=None,
         placeholder="Start typing to search..."
     )
-   
-    participant_row = participants_df[
-        participants_df["display"] == selected_display
-    ].iloc[0]
 
-    selected_participant_id = participant_row["participant_id"]
+    # ✅ Handle no selection (important!)
+    if selected_display is None:
+        st.stop()
+
+    # ✅ Lookup MUST use sorted dataframe
+    filtered_participant = participants_df_sorted[
+        participants_df_sorted["display"] == selected_display
+    ]
+
+    if filtered_participant.empty:
+        st.warning("⚠️ Participant not found. Please reselect.")
+        st.stop()
+
+    participant_row = filtered_participant.iloc[0]
+
+    selected_participant_id = participant_row["participant_id"]"]
 
 activity_date = st.date_input(
     "Date of activity",
