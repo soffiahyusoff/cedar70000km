@@ -8,7 +8,7 @@ import uuid
 # CONFIG
 # =========================
 GOAL_KM = 70000
-START_DATE = date(2026, 7, 1)
+START_DATE = date(2026, 8, 29)
 END_DATE = date(2027, 3, 1)
 MAX_DISTANCE = 100
 
@@ -100,7 +100,7 @@ st.title("🏃‍♀️‍➡️ Cedar Girls 70th Anniversary Distance Challenge
 
 st.markdown("""
 **🎯 Goal:** 70,000 km  
-**📅 Period:** 1 July 2026 → 1 March 2027  
+**📅 Period:** 29 August 2026 → 1 March 2027  
 """)
 
 # =========================
