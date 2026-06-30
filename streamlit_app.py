@@ -223,7 +223,7 @@ st.markdown("---")
 
 admin_password = st.text_input("🔐 Admin Access", type="password")
 
-if admin_password == "cedar70th":
+if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 
     # =========================
     # ADMIN PANEL
