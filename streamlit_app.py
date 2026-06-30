@@ -164,6 +164,51 @@ activity_date = st.date_input(
 
 distance = st.number_input("Distance (km)", min_value=0.1)
 
+
+# ✅ ✅ MOVE SUBMIT BUTTON HERE
+submit_clicked = st.button("Submit")
+
+if submit_clicked:
+
+    if participants_df.empty:
+        st.error("🚫 No participants available.")
+        st.stop()
+
+    if distance <= 0:
+        st.warning("Distance must be greater than 0.")
+        st.stop()
+
+    if distance > MAX_DISTANCE:
+        st.warning(f"Distance too large (> {MAX_DISTANCE} km).")
+        st.stop()
+
+    existing = c.execute("""
+        SELECT 1 FROM distance_logs
+        WHERE participant_id=? AND activity_date=?
+    """, (
+        selected_participant_id,
+        activity_date.strftime("%Y-%m-%d")
+    )).fetchone()
+
+    if existing:
+        st.error("❌ Already submitted today")
+        st.stop()
+
+    submission_id = str(uuid.uuid4())[:8]
+
+    add_submission(
+        submission_id,
+        selected_participant_id,
+        distance,
+        activity_date.strftime("%Y-%m-%d")
+    )
+
+    st.success("✅ Submitted!")
+    st.rerun()
+
+
+
+
 # =========================
 # ADMIN PANEL (HIDDEN)
 # =========================
@@ -263,43 +308,6 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
             st.rerun()
 
 
-# =========================
-# SUBMIT
-# =========================
-if st.button("Submit"):
-
-    if participants_df.empty:
-        st.error("No participants available.")
-        st.stop()
-
-    if distance <= 0:
-        st.warning("Enter valid distance")
-        st.stop()
-
-    if distance > MAX_DISTANCE:
-        st.warning("Distance too large")
-        st.stop()
-
-    existing = c.execute("""
-        SELECT 1 FROM distance_logs
-        WHERE participant_id=? AND activity_date=?
-    """, (selected_participant_id, activity_date.strftime("%Y-%m-%d"))).fetchone()
-
-    if existing:
-        st.error("Already submitted today")
-        st.stop()
-
-    submission_id = str(uuid.uuid4())[:8]
-
-    add_submission(
-        submission_id,
-        selected_participant_id,
-        distance,
-        activity_date.strftime("%Y-%m-%d")
-    )
-
-    st.success("✅ Submitted!")
-    st.rerun()
 
 # =========================
 # DISPLAY
