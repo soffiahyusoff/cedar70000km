@@ -136,26 +136,22 @@ else:
     if "selected_display" not in st.session_state:
         st.session_state["selected_display"] = None
     
-    selected_display = st.selectbox(
+      selected_display = st.selectbox(
         "Select your name",
         participants_df_sorted["display"],
         index=None,
-        placeholder="Start typing to search...",
-        key="selected_display"
+        placeholder="Start typing to search..."
     )
-
-    # ✅ Handle no selection (important!)
-    if selected_display is None:
-        st.stop()
-
-    # ✅ Lookup MUST use sorted dataframe
-    filtered_participant = participants_df_sorted[
-        participants_df_sorted["display"] == selected_display
-    ]
-
-    if filtered_participant.empty:
-        st.warning("⚠️ Participant not found. Please reselect.")
-        st.stop()
+    
+    # ✅ Only proceed if something is selected
+    if selected_display:
+        filtered_participant = participants_df_sorted[
+            participants_df_sorted["display"] == selected_display
+        ]
+    
+        if not filtered_participant.empty:
+            participant_row = filtered_participant.iloc[0]
+            selected_participant_id = participant_row["participant_id"]
 
     participant_row = filtered_participant.iloc[0]
 
