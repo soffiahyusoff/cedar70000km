@@ -170,7 +170,7 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
             else:
                 st.warning("Fill all fields")
 
-     =========================
+    # =========================
     # ✅ VIEW PARTICIPANTS (ADMIN ONLY)
     # =========================
     st.subheader("📋 Participant List")
