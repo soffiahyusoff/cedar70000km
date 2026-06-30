@@ -94,6 +94,8 @@ def get_data():
 # =========================
 # HEADER
 # =========================
+st.image("cedar70000km3.png", use_container_width=True
+
 st.title("🏃‍♀️‍➡️ Cedar Girls 70th Anniversary Distance Challenge")
 
 st.markdown("""
