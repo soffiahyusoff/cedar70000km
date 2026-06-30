@@ -156,7 +156,6 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 
     # ✅ Add participants
     st.subheader("➕ Add Participants")
-
     with st.expander("Add new participant"):
         name = st.text_input("Name", key="admin_name")
         year = st.text_input("Graduation Year")
@@ -170,76 +169,61 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
             else:
                 st.warning("Fill all fields")
 
-    # =========================
-    # ✅ VIEW PARTICIPANTS (ADMIN ONLY)
-    # =========================
+    # ✅ View participant list
     st.subheader("📋 Participant List")
-    
     if not participants_df.empty:
-        display_df = participants_df[["name", "grad_year", "cca"]].copy()
-    
         st.dataframe(
-            display_df.sort_values(by=["name", "grad_year"]),
+            participants_df[["name", "grad_year", "cca"]],
             use_container_width=True
         )
-    
-        st.write(f"👥 Total Participants: {len(display_df)}")
-    
     else:
         st.info("No participants found.")
 
-# =========================
-# ✏️ EDIT PARTICIPANT
-# =========================
-st.subheader("✏️ Edit Participant")
+    # ✅ ✅ EDIT PARTICIPANT (NOW HIDDEN PROPERLY)
+    st.subheader("✏️ Edit Participant")
 
-if not participants_df.empty:
+    if not participants_df.empty:
+        participants_df["display"] = (
+            participants_df["name"] + " (" +
+            participants_df["grad_year"] + ", " +
+            participants_df["cca"] + ")"
+        )
 
-    participants_df["display"] = (
-        participants_df["name"] + " (" +
-        participants_df["grad_year"] + ", " +
-        participants_df["cca"] + ")"
-    )
+        selected_edit = st.selectbox(
+            "Select participant to edit",
+            participants_df["display"],
+            key="edit_select"
+        )
 
-    selected_edit = st.selectbox(
-        "Select participant to edit",
-        participants_df["display"],
-        key="edit_select"
-    )
+        row = participants_df[
+            participants_df["display"] == selected_edit
+        ].iloc[0]
 
-    row = participants_df[
-        participants_df["display"] == selected_edit
-    ].iloc[0]
+        edit_name = st.text_input("Update Name", value=row["name"], key="edit_name")
+        edit_year = st.text_input("Update Graduation Year", value=row["grad_year"], key="edit_year")
+        edit_cca = st.text_input("Update CCA", value=row["cca"], key="edit_cca")
 
-    edit_name = st.text_input("Update Name", value=row["name"], key="edit_name")
-    edit_year = st.text_input("Update Graduation Year", value=row["grad_year"], key="edit_year")
-    edit_cca = st.text_input("Update CCA", value=row["cca"], key="edit_cca")
+        if st.button("Update Participant"):
+            if edit_name and edit_year and edit_cca:
+                c.execute("""
+                    UPDATE participants
+                    SET name=?, grad_year=?, cca=?, name_key=?, cca_key=?
+                    WHERE participant_id=?
+                """, (
+                    edit_name.strip(),
+                    edit_year.strip(),
+                    edit_cca.strip(),
+                    edit_name.strip().lower(),
+                    edit_cca.strip().lower(),
+                    row["participant_id"]
+                ))
+                conn.commit()
+                st.success("✅ Participant updated")
+                st.rerun()
+            else:
+                st.warning("All fields required")
 
-    if st.button("Update Participant"):
-        if edit_name and edit_year and edit_cca:
-
-            c.execute("""
-                UPDATE participants
-                SET name=?, grad_year=?, cca=?, name_key=?, cca_key=?
-                WHERE participant_id=?
-            """, (
-                edit_name.strip(),
-                edit_year.strip(),
-                edit_cca.strip(),
-                edit_name.strip().lower(),
-                edit_cca.strip().lower(),
-                row["participant_id"]
-            ))
-
-            conn.commit()
-            st.success("✅ Participant updated")
-            st.rerun()
-
-        else:
-            st.warning("All fields required")
-
-
-    # ✅ View + delete
+    # ✅ View + delete entries (your existing section)
     if not df.empty:
         st.subheader("🧾 Entries")
         st.dataframe(df)
@@ -257,6 +241,7 @@ if not participants_df.empty:
             conn.commit()
             st.success("✅ All cleared")
             st.rerun()
+
 
 # =========================
 # SUBMIT
