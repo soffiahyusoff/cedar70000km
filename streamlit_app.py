@@ -154,55 +154,44 @@ df = get_data()
 # =========================
 st.header("📥 Submit Your Distance")
 
-participant_mode = st.radio(
-    "Participant option",
-    ["Select existing participant", "Add new participant"],
-    horizontal=True
-)
-
 selected_participant_id = None
 name = ""
 grad_year = ""
 cca = ""
 
-if participant_mode == "Select existing participant":
-    if participants_df.empty:
-        st.info("No participants added yet. Please add a new participant first.")
-        participant_mode = "Add new participant"
-    else:
-        names = sorted(participants_df["name"].dropna().unique().tolist())
-        selected_name = st.selectbox("Name", names)
+if participants_df.empty:
+    st.warning("No participants available. Please contact admin.")
+    st.stop()
 
-        filtered_years = participants_df[
-            participants_df["name"] == selected_name
-        ]["grad_year"].dropna().unique().tolist()
-        filtered_years = sorted(filtered_years, reverse=True)
+# ✅ Dropdown selection ONLY
+names = sorted(participants_df["name"].dropna().unique().tolist())
+selected_name = st.selectbox("Name", names)
 
-        selected_grad_year = st.selectbox("Graduation Year", filtered_years)
+filtered_years = participants_df[
+    participants_df["name"] == selected_name
+]["grad_year"].dropna().unique().tolist()
+filtered_years = sorted(filtered_years, reverse=True)
 
-        filtered_ccas = participants_df[
-            (participants_df["name"] == selected_name) &
-            (participants_df["grad_year"] == selected_grad_year)
-        ]["cca"].dropna().unique().tolist()
-        filtered_ccas = sorted(filtered_ccas)
+selected_grad_year = st.selectbox("Graduation Year", filtered_years)
 
-        selected_cca = st.selectbox("CCA", filtered_ccas)
+filtered_ccas = participants_df[
+    (participants_df["name"] == selected_name) &
+    (participants_df["grad_year"] == selected_grad_year)
+]["cca"].dropna().unique().tolist()
+filtered_ccas = sorted(filtered_ccas)
 
-        participant_row = participants_df[
-            (participants_df["name"] == selected_name) &
-            (participants_df["grad_year"] == selected_grad_year) &
-            (participants_df["cca"] == selected_cca)
-        ].iloc[0]
+selected_cca = st.selectbox("CCA", filtered_ccas)
 
-        selected_participant_id = participant_row["participant_id"]
-        name = participant_row["name"]
-        grad_year = participant_row["grad_year"]
-        cca = participant_row["cca"]
+participant_row = participants_df[
+    (participants_df["name"] == selected_name) &
+    (participants_df["grad_year"] == selected_grad_year) &
+    (participants_df["cca"] == selected_cca)
+].iloc[0]
 
-if participant_mode == "Add new participant":
-    name = st.text_input("Enter participant name")
-    grad_year = st.text_input("Graduation Year (e.g. 2015)")
-    cca = st.text_input("CCA (e.g. Choir, Netball, Debate)")
+selected_participant_id = participant_row["participant_id"]
+name = participant_row["name"]
+grad_year = participant_row["grad_year"]
+cca = participant_row["cca"]
 
 activity_date = st.date_input(
     "Date of activity",
