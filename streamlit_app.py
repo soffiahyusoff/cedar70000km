@@ -277,14 +277,32 @@ else:
 # =========================
 # PROGRESS
 # =========================
+
 st.header("📊 Progress")
+
+# ✅ ALWAYS refresh latest data here
+df = get_data()
 
 if not df.empty:
     total_km = df["distance"].sum()
     st.metric("Total KM", f"{total_km:.2f}")
     st.progress(min(total_km / GOAL_KM, 1.0))
+
+    st.subheader("🏆 Leaderboard")
+    leaderboard = df.groupby(["name", "grad_year", "cca"])["distance"].sum().sort_values(ascending=False)
+    st.dataframe(leaderboard.reset_index())
+
+    # ✅ ✅ ADD THIS (your missing table)
+    st.subheader("🧾 All Submissions")
+    st.dataframe(
+        df[["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]]
+        .sort_values(by="activity_date", ascending=False),
+        use_container_width=True
+    )
+
 else:
     st.info("No data yet.")
+
 
 # =========================
 # TIMELINE
