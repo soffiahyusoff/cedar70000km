@@ -188,6 +188,57 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
     else:
         st.info("No participants found.")
 
+# =========================
+# ✏️ EDIT PARTICIPANT
+# =========================
+st.subheader("✏️ Edit Participant")
+
+if not participants_df.empty:
+
+    participants_df["display"] = (
+        participants_df["name"] + " (" +
+        participants_df["grad_year"] + ", " +
+        participants_df["cca"] + ")"
+    )
+
+    selected_edit = st.selectbox(
+        "Select participant to edit",
+        participants_df["display"],
+        key="edit_select"
+    )
+
+    row = participants_df[
+        participants_df["display"] == selected_edit
+    ].iloc[0]
+
+    edit_name = st.text_input("Update Name", value=row["name"], key="edit_name")
+    edit_year = st.text_input("Update Graduation Year", value=row["grad_year"], key="edit_year")
+    edit_cca = st.text_input("Update CCA", value=row["cca"], key="edit_cca")
+
+    if st.button("Update Participant"):
+        if edit_name and edit_year and edit_cca:
+
+            c.execute("""
+                UPDATE participants
+                SET name=?, grad_year=?, cca=?, name_key=?, cca_key=?
+                WHERE participant_id=?
+            """, (
+                edit_name.strip(),
+                edit_year.strip(),
+                edit_cca.strip(),
+                edit_name.strip().lower(),
+                edit_cca.strip().lower(),
+                row["participant_id"]
+            ))
+
+            conn.commit()
+            st.success("✅ Participant updated")
+            st.rerun()
+
+        else:
+            st.warning("All fields required")
+
+
     # ✅ View + delete
     if not df.empty:
         st.subheader("🧾 Entries")
