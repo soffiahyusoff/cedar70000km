@@ -261,17 +261,17 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 # =========================
 # VIEW INDIVIDUAL ENTRIES
 # =========================
-st.subheader("🧾 All Submissions")
+#st.subheader("🧾 All Submissions")
 
-if not df.empty:
-    st.dataframe(
-        df[
-            ["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]
-        ].sort_values(by="activity_date", ascending=False),
-        use_container_width=True
-    )
-else:
-    st.info("No submissions yet.")
+#if not df.empty:
+  #  st.dataframe(
+  #      df[
+  #          ["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]
+  #      ].sort_values(by="activity_date", ascending=False),
+  #      use_container_width=True
+  #  )
+#else:
+   # st.info("No submissions yet.")
 
 
 # =========================
