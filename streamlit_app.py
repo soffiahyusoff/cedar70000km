@@ -127,9 +127,13 @@ else:
         participants_df["grad_year"] + ", " +
         participants_df["cca"] + ")"
     )
-
-    selected_display = st.selectbox("Select your name", participants_df["display"])
-
+    # ✅ Sort alphabetically by name
+    participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
+    
+    selected_display = st.selectbox(
+        "Select your name",
+        participants_df_sorted["display"])
+   
     participant_row = participants_df[
         participants_df["display"] == selected_display
     ].iloc[0]
