@@ -244,44 +244,44 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
             st.rerun()
 
     # =========================
-# 🗑 DELETE PARTICIPANT
-# =========================
-st.subheader("🗑 Delete Participant")
+    # 🗑 DELETE PARTICIPANT
+    # =========================
+    st.subheader("🗑 Delete Participant")
 
-if not participants_df.empty:
+    if not participants_df.empty:
 
-    participants_df["display"] = (
-        participants_df["name"] + " (" +
-        participants_df["grad_year"] + ", " +
-        participants_df["cca"] + ")"
-    )
+        participants_df["display"] = (
+            participants_df["name"] + " (" +
+            participants_df["grad_year"] + ", " +
+            participants_df["cca"] + ")"
+        )
 
-    selected_delete = st.selectbox(
-        "Select participant to delete",
-        participants_df["display"],
-        key="delete_participant"
-    )
+        selected_delete = st.selectbox(
+            "Select participant to delete",
+            participants_df["display"],
+            key="delete_participant"
+        )
 
-    delete_row = participants_df[
-        participants_df["display"] == selected_delete
-    ].iloc[0]
+        delete_row = participants_df[
+            participants_df["display"] == selected_delete
+        ].iloc[0]
 
-    confirm_delete = st.checkbox("⚠️ Confirm deletion of this participant and ALL their entries")
+        confirm_delete = st.checkbox("⚠️ Confirm deletion of this participant and ALL their entries")
 
-    if st.button("Delete Participant") and confirm_delete:
+        if st.button("Delete Participant") and confirm_delete:
 
-        participant_id = delete_row["participant_id"]
+            participant_id = delete_row["participant_id"]
 
-        # ✅ Delete ALL submissions linked to participant
-        c.execute("DELETE FROM distance_logs WHERE participant_id=?", (participant_id,))
+            # ✅ Delete ALL submissions linked to participant
+            c.execute("DELETE FROM distance_logs WHERE participant_id=?", (participant_id,))
 
-        # ✅ Delete participant
-        c.execute("DELETE FROM participants WHERE participant_id=?", (participant_id,))
+            # ✅ Delete participant
+            c.execute("DELETE FROM participants WHERE participant_id=?", (participant_id,))
 
-        conn.commit()
+            conn.commit()
 
-        st.success("✅ Participant and all related entries deleted")
-        st.rerun()
+            st.success("✅ Participant and all related entries deleted")
+            st.rerun()
 
 
     
