@@ -258,4 +258,4 @@ elif today > END_DATE:
 else:
     progress_days = (today - START_DATE).days / (END_DATE - START_DATE).days
     st.progress(progress_days)
-``
+
