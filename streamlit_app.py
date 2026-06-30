@@ -131,8 +131,11 @@ else:
     participants_df_sorted = participants_df.sort_values(by=["name", "grad_year"])
     
     selected_display = st.selectbox(
-        "Select your name",
-        participants_df_sorted["display"])
+       "Select your name",
+        participants_df_sorted["display"],
+        index=None,
+        placeholder="Start typing to search..."
+    )
    
     participant_row = participants_df[
         participants_df["display"] == selected_display
