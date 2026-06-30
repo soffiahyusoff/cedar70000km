@@ -160,8 +160,7 @@ grad_year = ""
 cca = ""
 
 if participants_df.empty:
-    st.warning("No participants available. Please contact admin.")
-    st.stop()
+    st.warning("No participants available. Please contact admin to add participants.")
 
 # ✅ Dropdown selection ONLY
 names = sorted(participants_df["name"].dropna().unique().tolist())
@@ -290,7 +289,15 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 # =========================
 # SUBMIT
 # =========================
-if st.button("Submit"):
+
+submit_clicked = st.button("Submit")
+
+if submit_clicked:
+
+    if participants_df.empty:
+        st.error("🚫 No participants available. Please contact admin.")
+        st.stop()
+
 
     if not name.strip():
         st.warning("Please select a participant.")
