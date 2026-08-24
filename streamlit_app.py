@@ -351,68 +351,19 @@ else:
 # =========================
 # TIMELINE
 # =========================
-st.header("📅 Timeline")
+# Timeline percentage
+pct = progress_days * 100
 
-today = date.today()
+st.write(f"**Challenge Duration Progress:** {pct:.1f}%")
+st.progress(progress_days)
 
-if today < START_DATE:
-    st.info("Event not started")
+# Milestone achievements
+milestones = []
 
-elif today > END_DATE:
-    st.success("✅ Event completed!")
-
-else:
-    progress_days = (
-        (today - START_DATE).days /
-        (END_DATE - START_DATE).days
-    )
-
-    pct = progress_days * 100
-
-    st.write(f"**Challenge Duration Progress:** {pct:.1f}%")
-
-    st.progress(progress_days)
-
-    # Timeline markers
-    col1, col2, col3, col4, col5 = st.columns(5)
-
-    with col1:
-        st.caption("0%")
-
-    with col2:
-        st.caption("25%")
-
-    with col3:
-        st.caption("50%")
-
-    with col4:
-        st.caption("75%")
-
-    with col5:
-        st.caption("100%")
-
-    # Milestone messages
-    if pct >= 75:
-        st.success(
-            "🎉 Final quarter of the challenge! Keep the momentum going as we head towards the finish line."
-        )
-
-    elif pct >= 50:
-        st.info(
-            "🏃 Halfway point reached! We've completed more than half of the challenge duration."
-        )
-
-    elif pct >= 25:
-        st.info(
-            "✅ First quarter completed! Thank you for contributing to the challenge so far."
-        )
-
+for milestone in [25, 50, 75, 100]:
+    if pct >= milestone:
+        milestones.append(f"✅ {milestone}%")
     else:
-        st.info(
-            "🚀 The challenge has just begun. Every kilometre counts!"
-        )
+        milestones.append(f"⬜ {milestone}%")
 
-    st.caption(
-        f"Challenge Period: {START_DATE.strftime('%d %b %Y')} → "
-        f"{END_DATE.strftime('%d %b %Y')}"
-    )
+st.write(" | ".join(milestones))
