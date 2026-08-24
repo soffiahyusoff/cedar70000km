@@ -381,22 +381,5 @@ else:
         else:
             milestones.append(f"⬜ {milestone}%")
 
-    st.write(" | ".join(milestones))# =========================
-# TIMELINE
-# =========================
-# Timeline percentage
-pct = progress_days * 100
-
-st.write(f"**Challenge Duration Progress:** {pct:.1f}%")
-st.progress(progress_days)
-
-# Milestone achievements
-milestones = []
-
-for milestone in [25, 50, 75, 100]:
-    if pct >= milestone:
-        milestones.append(f"✅ {milestone}%")
-    else:
-        milestones.append(f"⬜ {milestone}%")
-
-st.write(" | ".join(milestones))
+    st.write(" | ".join(milestones))
+   
