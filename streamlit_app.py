@@ -357,8 +357,24 @@ today = date.today()
 
 if today < START_DATE:
     st.info("Event not started")
+
 elif today > END_DATE:
-    st.success("Event completed")
+    st.success("✅ Event completed!")
+
 else:
-    progress_days = (today - START_DATE).days / (END_DATE - START_DATE).days
+    progress_days = (
+        (today - START_DATE).days /
+        (END_DATE - START_DATE).days
+    )
+
+    st.write(
+        f"**Challenge Duration Progress:** "
+        f"{progress_days*100:.1f}%"
+    )
+
     st.progress(progress_days)
+
+    st.caption(
+        f"Started: {START_DATE.strftime('%d %b %Y')} | "
+        f"Ends: {END_DATE.strftime('%d %b %Y')}"
+    )
