@@ -8,7 +8,7 @@ import uuid
 # CONFIG
 # =========================
 GOAL_KM = 70000
-START_DATE = date(2026, 8, 29)
+START_DATE = date(2026, 8, 23)
 END_DATE = date(2027, 7, 2)
 MAX_DISTANCE = 100
 
