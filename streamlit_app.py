@@ -351,6 +351,39 @@ else:
 # =========================
 # TIMELINE
 # =========================
+st.header("📅 Timeline")
+
+today = date.today()
+
+if today < START_DATE:
+    st.info("Event not started")
+
+elif today > END_DATE:
+    st.success("✅ Event completed!")
+
+else:
+    progress_days = (
+        (today - START_DATE).days /
+        (END_DATE - START_DATE).days
+    )
+
+    pct = progress_days * 100
+
+    st.write(f"**Challenge Duration Progress:** {pct:.1f}%")
+    st.progress(progress_days)
+
+    # Milestone achievements
+    milestones = []
+
+    for milestone in [25, 50, 75, 100]:
+        if pct >= milestone:
+            milestones.append(f"✅ {milestone}%")
+        else:
+            milestones.append(f"⬜ {milestone}%")
+
+    st.write(" | ".join(milestones))# =========================
+# TIMELINE
+# =========================
 # Timeline percentage
 pct = progress_days * 100
 
