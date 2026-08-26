@@ -434,35 +434,75 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
     st.subheader("📋 Participant List")
     if not participants_df.empty:
         st.dataframe(participants_df[["name", "grad_year", "cca"]])
-
+        
     # Edit participants
     st.subheader("✏️ Edit Participant")
-
+    
     if not participants_df.empty:
-        selected_edit = st.selectbox("Select participant", participants_df["display"], key="edit")
-
-        row = participants_df[participants_df["display"] == selected_edit].iloc[0]
-
-        edit_name = st.text_input("Name", value=row["name"])
-        edit_year = st.text_input("Year", value=row["grad_year"])
-        edit_cca = st.text_input("CCA", value=row["cca"])
-
+    
+        selected_edit = st.selectbox(
+            "Select participant",
+            participants_df["display"],
+            key="edit"
+        )
+    
+        row = participants_df[
+            participants_df["display"] == selected_edit
+        ].iloc[0]
+    
+        edit_name = st.text_input(
+            "Name",
+            value=row["name"]
+        )
+    
+        edit_year = st.text_input(
+            "Year",
+            value=row["grad_year"]
+        )
+    
+        edit_cca = st.text_input(
+            "CCA",
+            value=row["cca"]
+        )
+    
         if st.button("Update"):
-            c.execute("""
-                UPDATE participants
-                SET name=?, grad_year=?, cca=?, name_key=?, cca_key=?
-                WHERE participant_id=?
-            """, (
-                edit_name.strip(),
-                edit_year.strip(),
-                edit_cca.strip(),
-                edit_name.strip().lower(),
-                edit_cca.strip().lower(),
-                row["participant_id"]
-            ))
-            conn.commit()
+    
+            updated_participants = get_participants()
+    
+            selected_id = str(row["participant_id"])
+    
+            updated_participants.loc[
+                updated_participants["participant_id"] == selected_id,
+                "name"
+            ] = clean_text(edit_name)
+    
+            updated_participants.loc[
+                updated_participants["participant_id"] == selected_id,
+                "grad_year"
+            ] = clean_text(edit_year)
+    
+            updated_participants.loc[
+                updated_participants["participant_id"] == selected_id,
+                "cca"
+            ] = clean_text(edit_cca)
+    
+            updated_participants.loc[
+                updated_participants["participant_id"] == selected_id,
+                "name_key"
+            ] = key_text(edit_name)
+    
+            updated_participants.loc[
+                updated_participants["participant_id"] == selected_id,
+                "cca_key"
+            ] = key_text(edit_cca)
+    
+            save_participants(updated_participants)
+    
             st.success("✅ Updated")
             st.rerun()
+    
+    else:
+        st.info("No participants available.")
 
     # =========================
     # 🗑 DELETE PARTICIPANT
