@@ -32,7 +32,263 @@ SUBMISSIONS_SHEET_URL = st.secrets["connections"]["gsheets"][
 PARTICIPANTS_WORKSHEET = "Participants"
 SUBMISSIONS_WORKSHEET = "Submissions"
 
+# =========================
+# HELPERS
+# =========================
+def clean_text(value):
+    return " ".join(str(value).strip().split())
 
+
+def key_text(value):
+    return clean_text(value).lower()
+
+
+def get_participants():
+    try:
+        participants = gsheets_conn.read(
+            spreadsheet=PARTICIPANTS_SHEET_URL,
+            worksheet=PARTICIPANTS_WORKSHEET,
+            ttl=0
+        )
+
+        required_columns = [
+            "participant_id",
+            "name",
+            "grad_year",
+            "cca",
+            "name_key",
+            "cca_key"
+        ]
+
+        if participants.empty:
+            return pd.DataFrame(columns=required_columns)
+
+        participants = participants.dropna(how="all")
+
+        for column in required_columns:
+            if column not in participants.columns:
+                participants[column] = ""
+
+        participants = participants[required_columns].copy()
+
+        for column in required_columns:
+            participants[column] = (
+                participants[column]
+                .fillna("")
+                .astype(str)
+            )
+
+        return participants
+
+    except Exception as error:
+        st.error(f"Unable to read participant records: {error}")
+        return pd.DataFrame(
+            columns=[
+                "participant_id",
+                "name",
+                "grad_year",
+                "cca",
+                "name_key",
+                "cca_key"
+            ]
+        )
+
+
+def save_participants(participants):
+    participants = participants[
+        [
+            "participant_id",
+            "name",
+            "grad_year",
+            "cca",
+            "name_key",
+            "cca_key"
+        ]
+    ].copy()
+
+    gsheets_conn.update(
+        spreadsheet=PARTICIPANTS_SHEET_URL,
+        worksheet=PARTICIPANTS_WORKSHEET,
+        data=participants
+    )
+
+    st.cache_data.clear()
+
+
+def add_participant(name, grad_year, cca):
+    name = clean_text(name)
+    grad_year = clean_text(grad_year)
+    cca = clean_text(cca)
+
+    participants = get_participants()
+
+    duplicate = participants[
+        (participants["name_key"] == key_text(name)) &
+        (participants["grad_year"] == grad_year) &
+        (participants["cca_key"] == key_text(cca))
+    ]
+
+    if not duplicate.empty:
+        return False, "Participant already exists."
+
+    new_participant = pd.DataFrame(
+        [
+            {
+                "participant_id": str(uuid.uuid4())[:8],
+                "name": name,
+                "grad_year": grad_year,
+                "cca": cca,
+                "name_key": key_text(name),
+                "cca_key": key_text(cca)
+            }
+        ]
+    )
+
+    updated_participants = pd.concat(
+        [participants, new_participant],
+        ignore_index=True
+    )
+
+    save_participants(updated_participants)
+
+    return True, "Participant added successfully."
+
+
+def get_submissions():
+    required_columns = [
+        "submission_id",
+        "participant_id",
+        "distance",
+        "activity_date",
+        "timestamp"
+    ]
+
+    try:
+        submissions = gsheets_conn.read(
+            spreadsheet=SUBMISSIONS_SHEET_URL,
+            worksheet=SUBMISSIONS_WORKSHEET,
+            ttl=0
+        )
+
+        if submissions.empty:
+            return pd.DataFrame(columns=required_columns)
+
+        submissions = submissions.dropna(how="all")
+
+        for column in required_columns:
+            if column not in submissions.columns:
+                submissions[column] = ""
+
+        submissions = submissions[required_columns].copy()
+
+        submissions["submission_id"] = (
+            submissions["submission_id"].fillna("").astype(str)
+        )
+
+        submissions["participant_id"] = (
+            submissions["participant_id"].fillna("").astype(str)
+        )
+
+        submissions["activity_date"] = (
+            submissions["activity_date"].fillna("").astype(str)
+        )
+
+        submissions["timestamp"] = (
+            submissions["timestamp"].fillna("").astype(str)
+        )
+
+        submissions["distance"] = pd.to_numeric(
+            submissions["distance"],
+            errors="coerce"
+        ).fillna(0.0)
+
+        return submissions
+
+    except Exception as error:
+        st.error(f"Unable to read submission records: {error}")
+        return pd.DataFrame(columns=required_columns)
+
+
+def save_submissions(submissions):
+    submissions = submissions[
+        [
+            "submission_id",
+            "participant_id",
+            "distance",
+            "activity_date",
+            "timestamp"
+        ]
+    ].copy()
+
+    gsheets_conn.update(
+        spreadsheet=SUBMISSIONS_SHEET_URL,
+        worksheet=SUBMISSIONS_WORKSHEET,
+        data=submissions
+    )
+
+    st.cache_data.clear()
+
+
+def add_submission(
+    submission_id,
+    participant_id,
+    distance,
+    activity_date
+):
+    submissions = get_submissions()
+
+    new_submission = pd.DataFrame(
+        [
+            {
+                "submission_id": submission_id,
+                "participant_id": participant_id,
+                "distance": float(distance),
+                "activity_date": activity_date,
+                "timestamp": datetime.now().strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+            }
+        ]
+    )
+
+    updated_submissions = pd.concat(
+        [submissions, new_submission],
+        ignore_index=True
+    )
+
+    save_submissions(updated_submissions)
+
+
+def get_data():
+    submissions = get_submissions()
+    participants = get_participants()
+
+    if submissions.empty or participants.empty:
+        return pd.DataFrame(
+            columns=[
+                "submission_id",
+                "participant_id",
+                "distance",
+                "activity_date",
+                "timestamp",
+                "name",
+                "grad_year",
+                "cca"
+            ]
+        )
+
+    return submissions.merge(
+        participants[
+            [
+                "participant_id",
+                "name",
+                "grad_year",
+                "cca"
+            ]
+        ],
+        on="participant_id",
+        how="left"
+    )
 
 # =========================
 # HEADER
