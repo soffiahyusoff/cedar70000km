@@ -364,28 +364,37 @@ if st.button("Submit"):
         st.warning("Distance too large.")
         st.stop()
 
-    existing = c.execute("""
-        SELECT 1 FROM distance_logs
-        WHERE participant_id=? AND activity_date=?
-    """, (
-        selected_participant_id,
-        activity_date.strftime("%Y-%m-%d")
-    )).fetchone()
-
-    if existing:
-        st.error("❌ Already submitted today")
+    activity_date_text = activity_date.strftime("%Y-%m-%d")
+    existing_submissions = get_submissions()
+    
+    existing = existing_submissions[
+        (
+            existing_submissions["participant_id"] ==
+            str(selected_participant_id)
+        ) &
+        (
+            existing_submissions["activity_date"] ==
+            activity_date_text
+        )
+    ]
+    
+    if not existing.empty:
+        st.error("❌ Already submitted for this activity date.")
         st.stop()
 
     submission_id = str(uuid.uuid4())[:8]
-
+    
     add_submission(
         submission_id,
         selected_participant_id,
         distance,
-        activity_date.strftime("%Y-%m-%d")
+        activity_date_text
     )
-
-    st.success("✅ Submitted!")
+    
+    st.success(
+        f"✅ Submitted! Your Submission ID is {submission_id}"
+    )
+    
     st.rerun()
 
 # =========================
