@@ -69,13 +69,18 @@ def get_participants():
             if column not in participants.columns:
                 participants[column] = ""
 
-        
+                
         participants = participants[required_columns].copy()
+        
+        for column in required_columns:
+            participants[column] = (
+                participants[column]
+                .fillna("")
+                .astype(str)
+            )
         
         participants["grad_year"] = (
             participants["grad_year"]
-            .fillna("")
-            .astype(str)
             .str.replace(".0", "", regex=False)
         )
         
