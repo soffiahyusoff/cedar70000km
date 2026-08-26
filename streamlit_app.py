@@ -530,18 +530,25 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
         confirm_delete = st.checkbox("⚠️ Confirm deletion of this participant and ALL their entries")
 
         if st.button("Delete Participant") and confirm_delete:
-
-            participant_id = delete_row["participant_id"]
-
-            # ✅ Delete ALL submissions linked to participant
-            c.execute("DELETE FROM distance_logs WHERE participant_id=?", (participant_id,))
-
-            # ✅ Delete participant
-            c.execute("DELETE FROM participants WHERE participant_id=?", (participant_id,))
-
-            conn.commit()
-
-            st.success("✅ Participant and all related entries deleted")
+            
+            participant_id = str(delete_row["participant_id"])
+            
+            updated_submissions = get_submissions()
+            updated_submissions = updated_submissions[
+                updated_submissions["participant_id"] != participant_id
+            ].reset_index(drop=True)
+            
+            updated_participants = get_participants()
+            updated_participants = updated_participants[
+                updated_participants["participant_id"] != participant_id
+            ].reset_index(drop=True)
+            
+            save_submissions(updated_submissions)
+            save_participants(updated_participants)
+            
+            st.success(
+                "✅ Participant and all related entries deleted"
+            )
             st.rerun()
 
 
