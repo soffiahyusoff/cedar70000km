@@ -206,7 +206,7 @@ def add_participant(name, grad_year, cca):
         f"Participant added successfully "
         f"({participant_id})"
     )
-`
+
 
 def get_submissions():
     required_columns = [
