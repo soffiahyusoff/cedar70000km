@@ -531,7 +531,7 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
 
         if st.button("Delete Participant") and confirm_delete:
             
-            participant_id = str(delete_row["participant_id"])
+            participant_id = str(delete_row["participant_id"]).strip()
             
             updated_submissions = get_submissions()
             updated_submissions = updated_submissions[
@@ -556,14 +556,35 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
         delete_id = st.text_input("Delete submission ID")
 
         if st.button("Delete Entry"):
-            c.execute("DELETE FROM distance_logs WHERE submission_id=?", (delete_id,))
-            conn.commit()
+        
+            updated_submissions = get_submissions()
+        
+            updated_submissions = updated_submissions[
+                updated_submissions["submission_id"] !=
+                clean_text(delete_id)
+            ].reset_index(drop=True)
+        
+            save_submissions(updated_submissions)
+        
             st.success("✅ Deleted")
-
+            st.rerun()
+        
         if st.button("⚠️ Delete ALL"):
-            c.execute("DELETE FROM distance_logs")
-            conn.commit()
-            st.success("✅ Cleared all")
+        
+            empty_submissions = pd.DataFrame(
+                columns=[
+                    "submission_id",
+                    "participant_id",
+                    "distance",
+                    "activity_date",
+                    "timestamp"
+                ]
+            )
+        
+            save_submissions(empty_submissions)
+        
+            st.success("✅ Cleared all submissions")
+            st.rerun()
 
 
 # =========================
