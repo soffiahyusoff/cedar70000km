@@ -48,7 +48,7 @@ def get_participants():
         participants = gsheets_conn.read(
             spreadsheet=PARTICIPANTS_SHEET_URL,
             worksheet=PARTICIPANTS_WORKSHEET,
-            ttl=0
+            ttl="1m"
         )
 
         required_columns = [
@@ -123,7 +123,7 @@ def save_participants(participants):
         data=participants
     )
 
-    st.cache_data.clear()
+
 
 
 def add_participant(name, grad_year, cca):
@@ -178,7 +178,7 @@ def get_submissions():
         submissions = gsheets_conn.read(
             spreadsheet=SUBMISSIONS_SHEET_URL,
             worksheet=SUBMISSIONS_WORKSHEET,
-            ttl=0
+            ttl="1m"
         )
 
         if submissions.empty:
@@ -237,7 +237,7 @@ def save_submissions(submissions):
         data=submissions
     )
 
-    st.cache_data.clear()
+
 
 
 def add_submission(
