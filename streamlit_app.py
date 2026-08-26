@@ -123,10 +123,43 @@ def save_participants(participants):
         data=participants
     )
 
+def generate_participant_id():
 
+    participants = get_participants()
+
+    if participants.empty:
+        return "CG70-0001"
+
+    existing_ids = (
+        participants["participant_id"]
+        .fillna("")
+        .astype(str)
+    )
+
+    numeric_ids = []
+
+    for pid in existing_ids:
+
+        if pid.startswith("CG70-"):
+
+            try:
+                numeric_ids.append(
+                    int(pid.replace("CG70-", ""))
+                )
+
+            except ValueError:
+                pass
+
+    if not numeric_ids:
+        return "CG70-0001"
+
+    next_id = max(numeric_ids) + 1
+
+    return f"CG70-{next_id:04d}"
 
 
 def add_participant(name, grad_year, cca):
+
     name = clean_text(name)
     grad_year = clean_text(grad_year)
     cca = clean_text(cca)
@@ -142,10 +175,12 @@ def add_participant(name, grad_year, cca):
     if not duplicate.empty:
         return False, "Participant already exists."
 
+    participant_id = generate_participant_id()
+
     new_participant = pd.DataFrame(
         [
             {
-                "participant_id": str(uuid.uuid4())[:8],
+                "participant_id": participant_id,
                 "name": name,
                 "grad_year": grad_year,
                 "cca": cca,
@@ -162,8 +197,11 @@ def add_participant(name, grad_year, cca):
 
     save_participants(updated_participants)
 
-    return True, "Participant added successfully."
-
+    return True, (
+        f"Participant added successfully "
+        f"({participant_id})"
+    )
+`
 
 def get_submissions():
     required_columns = [
