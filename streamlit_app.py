@@ -48,7 +48,7 @@ def get_participants():
         participants = gsheets_conn.read(
             spreadsheet=PARTICIPANTS_SHEET_URL,
             worksheet=PARTICIPANTS_WORKSHEET,
-            ttl="1m"
+            ttl=5"
         )
 
         required_columns = [
@@ -178,7 +178,7 @@ def get_submissions():
         submissions = gsheets_conn.read(
             spreadsheet=SUBMISSIONS_SHEET_URL,
             worksheet=SUBMISSIONS_WORKSHEET,
-            ttl="1m"
+            ttl="5"
         )
 
         if submissions.empty:
