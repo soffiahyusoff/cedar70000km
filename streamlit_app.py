@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 from datetime import datetime, date
 import uuid
+from streamlit_gsheets import GSheetsConnection
 
 # =========================
 # CONFIG
@@ -13,83 +14,25 @@ END_DATE = date(2027, 7, 2)
 MAX_DISTANCE = 100
 
 # =========================
-# DATABASE SETUP
+# GOOGLE SHEETS SETUP
 # =========================
-conn = sqlite3.connect("challenge.db", check_same_thread=False)
-c = conn.cursor()
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS participants (
-    participant_id TEXT PRIMARY KEY,
-    name TEXT,
-    grad_year TEXT,
-    cca TEXT,
-    name_key TEXT,
-    cca_key TEXT,
-    UNIQUE(name_key, grad_year, cca_key)
+gsheets_conn = st.connection(
+    "gsheets",
+    type=GSheetsConnection
 )
-""")
 
-c.execute("""
-CREATE TABLE IF NOT EXISTS distance_logs (
-    submission_id TEXT PRIMARY KEY,
-    participant_id TEXT,
-    distance REAL,
-    activity_date TEXT,
-    timestamp TEXT
-)
-""")
-conn.commit()
+PARTICIPANTS_SHEET_URL = st.secrets["connections"]["gsheets"][
+    "participants_spreadsheet"
+]
 
-# =========================
-# HELPERS
-# =========================
-def clean_text(value):
-    return " ".join(value.strip().split())
+SUBMISSIONS_SHEET_URL = st.secrets["connections"]["gsheets"][
+    "spreadsheet"
+]
 
-def key_text(value):
-    return clean_text(value).lower()
+PARTICIPANTS_WORKSHEET = "Participants"
+SUBMISSIONS_WORKSHEET = "Submissions"
 
-def add_participant(name, grad_year, cca):
-    participant_id = str(uuid.uuid4())[:8]
 
-    c.execute("""
-        INSERT OR IGNORE INTO participants
-        (participant_id, name, grad_year, cca, name_key, cca_key)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        participant_id,
-        name.strip(),
-        grad_year.strip(),
-        cca.strip(),
-        name.strip().lower(),
-        cca.strip().lower()
-    ))
-    conn.commit()
-
-def get_participants():
-    return pd.read_sql("SELECT * FROM participants", conn)
-
-def add_submission(submission_id, participant_id, distance, activity_date):
-    c.execute("""
-        INSERT INTO distance_logs
-        VALUES (?, ?, ?, ?, ?)
-    """, (
-        submission_id,
-        participant_id,
-        distance,
-        activity_date,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ))
-    conn.commit()
-
-def get_data():
-    return pd.read_sql("""
-        SELECT d.*, p.name, p.grad_year, p.cca
-        FROM distance_logs d
-        JOIN participants p
-        ON d.participant_id = p.participant_id
-    """, conn)
 
 # =========================
 # HEADER
