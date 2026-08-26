@@ -405,10 +405,21 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
         cca = st.text_input("CCA")
 
         if st.button("Add Participant"):
-            if name and year and cca:
-                add_participant(name, year, cca)
-                st.success("✅ Added")
-                st.rerun()
+            if not name or not year or not cca:
+                st.warning("Please complete all participant fields.")
+            else:
+                added, message = add_participant(
+                    name,
+                    year,
+                    cca
+                )
+
+                if added:
+                    st.success(f"✅ {message}")
+                    st.rerun()
+                else:
+                    st.warning(message)
+
 
     # Participant list
     st.subheader("📋 Participant List")
