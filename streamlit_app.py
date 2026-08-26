@@ -546,9 +546,7 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
             save_submissions(updated_submissions)
             save_participants(updated_participants)
             
-            st.success(
-                "✅ Participant and all related entries deleted"
-            )
+            st.success("✅ Participant and all related entries deleted")
             st.rerun()
 
 
