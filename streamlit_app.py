@@ -630,7 +630,10 @@ with st.expander("12. How accurate do my distances need to be?"):
  
 st.info(
 "❤️ Thank you for being part of the Cedar Girls 70th Anniversary Distance Challenge. "
-"Every kilometre counts towards our shared goal of 70,000 km!"
+
+"Every kilometre counts towards our shared goal of 70,000 km. "
+
+"Whether you're walking, jogging or running, your perseverance inspires others and brings us one step closer to the finish line! "
 )
 
 
