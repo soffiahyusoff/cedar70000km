@@ -803,6 +803,7 @@ with st.expander("11. I can't see my name in the participant list. What should I
     Please complete the registration form using the link below:
      
     🔗 https://docs.google.com/spreadsheets/d/14n5bPduKfCls8ObaRoyX-IbYBoA9fCmXvw-RlN_Mk_g/edit?gid=1986767549#gid=1986767549
+    
     Please allow approximately 5–7 days for your name to be added to the participant list.
      
     In the meantime, continue tracking your distances. Once your name has been added,
@@ -812,9 +813,7 @@ with st.expander("11. I can't see my name in the participant list. What should I
 with st.expander("12. How accurate do my distances need to be?"):
     st.write("""
     Please provide your best and most honest estimate based on your fitness tracker,
-    fitness app, treadmill reading or route distance.
-     
-    There's no need to be exact to the nearest metre. Every kilometre contributes
+    fitness app, treadmill reading or route distance. Every kilometre contributes
     towards our shared goal of 70,000 km! 🎉
     """)
  
