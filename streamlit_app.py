@@ -451,6 +451,190 @@ if st.button("Submit"):
     
     st.rerun()
 
+
+# =========================
+# VIEW INDIVIDUAL ENTRIES
+# =========================
+#st.subheader("🧾 All Submissions")
+
+#if not df.empty:
+  #  st.dataframe(
+  #      df[
+  #          ["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]
+  #      ].sort_values(by="activity_date", ascending=False),
+  #      use_container_width=True
+  #  )
+#else:
+   # st.info("No submissions yet.")
+
+
+# =========================
+# PROGRESS
+# =========================
+
+st.header("📊 Progress")
+
+# ✅ ALWAYS refresh latest data here
+df = get_data()
+
+if not df.empty:
+    total_km = df["distance"].sum()
+    st.metric("Total KM", f"{total_km:.2f}")
+    st.progress(min(total_km / GOAL_KM, 1.0))
+
+    st.subheader("🏆 Leaderboard")
+    leaderboard = df.groupby(["name", "grad_year", "cca"])["distance"].sum().sort_values(ascending=False)
+    st.dataframe(leaderboard.reset_index())
+
+    # ✅ ✅ ADD THIS (your missing table)
+    st.subheader("🧾 All Submissions")
+    st.dataframe(
+        df[["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]]
+        .sort_values(by="activity_date", ascending=False),
+        use_container_width=True
+    )
+
+else:
+    st.info("No data yet.")
+
+
+# =========================
+# TIMELINE
+# =========================
+st.header("📅 Timeline")
+
+today = date.today()
+
+if today < START_DATE:
+    st.info("Event not started")
+
+elif today > END_DATE:
+    st.success("✅ Event completed!")
+
+else:
+    progress_days = (
+        (today - START_DATE).days /
+        (END_DATE - START_DATE).days
+    )
+
+    pct = progress_days * 100
+
+    st.write(f"**Challenge Duration Progress:** {pct:.1f}%")
+    st.progress(progress_days)
+
+    # Milestone achievements
+    milestones = []
+
+    for milestone in [25, 50, 75, 100]:
+        if pct >= milestone:
+            milestones.append(f"✅ {milestone}%")
+        else:
+            milestones.append(f"⬜ {milestone}%")
+
+    st.write(" | ".join(milestones))
+
+# =========================
+# FAQ
+# =========================
+st.markdown("---")
+ 
+st.header("❓ FAQ & Challenge Guidelines")
+ 
+st.write(
+"Have a question? Check our FAQ below! "
+"If you don't see your question here, feel free to reach out to @Soffiah."
+)
+ 
+with st.expander("1. Can I make multiple entries per day?"):
+    st.write("""
+    No, only one entry is allowed per day. If you've walked, jogged, or run multiple times in a day,
+    simply add up all the distances and submit the total distance for that day.
+    """)
+ 
+with st.expander("2. What should I do if I made an erroneous entry?"):
+    st.write("""
+    No worries! Just let @Soffiah know and provide your Submission ID (if available).
+    The entry can be edited or deleted, and you can then submit the correct distance.
+    """)
+ 
+with st.expander("3. What happens if I ran yesterday but forgot to log it?"):
+    st.write("""
+    That's perfectly fine! You can backdate your entry. Simply select the date you missed
+    and submit the distance you covered on that day.
+    """)
+ 
+with st.expander("4. I did a Zumba / Pilates / Badminton / Pickleball / Tennis session. Can I add that in?"):
+    st.write("""
+    Sorry, not for this challenge. We're currently tracking only walking, jogging,
+    and running distances so that everyone is measured using the same criteria.
+    """)
+ 
+with st.expander("5. I went for a hike. Can I add that in?"):
+    st.write("""
+    Yes! Hiking counts as walking, so feel free to log the distance covered during your hike.
+    """)
+ 
+with st.expander("6. I only walk or run on a treadmill. Does that count?"):
+    st.write("""
+    Absolutely! Both indoor treadmill and outdoor walking, jogging and running distances are accepted.
+     
+    Simply log the distance shown on your treadmill or fitness device as you would for any other walk or run.
+    """)
+ 
+with st.expander("7. I completed a triathlon. Can I include my running, cycling and swimming distances?"):
+    st.write("""
+    First of all, wow, that's impressive! 💪
+     
+    For this challenge, we're only tracking walking, jogging and running distances.
+    Please log only your running distance from the triathlon.
+    """)
+ 
+with st.expander("8. I have an Apple Watch or Garmin. Can I sync my data directly?"):
+    st.write("""
+    Unfortunately not. As this is a community initiative run on a $0 budget,
+    we're unable to support direct syncing from fitness devices at the moment.
+    """)
+ 
+with st.expander("9. I use Strava, Runkeeper or another fitness app. Can the site read my activity automatically?"):
+    st.write("""
+    Not at the moment. As this is a community initiative run on a $0 budget,
+    you'll need to enter your distances manually.
+    """)
+ 
+with st.expander("10. Should I upload screenshots or records from my fitness device to substantiate my entry?"):
+    st.write("""
+    No need! We're operating on trust and honesty because Cedarians are 🎼 courteous, honest every day. 🎶🎵
+     
+    That said, we'd love for you to share your screenshots, routes, photos and achievements
+    in the WhatsApp group to motivate and inspire fellow participants!
+    """)
+ 
+with st.expander("11. I can't see my name in the participant list. What should I do?"):
+    st.write("""
+    Please complete the registration form using the link below:
+     
+    🔗 https://docs.google.com/spreadsheets/d/14n5bPduKfCls8ObaRoyX-IbYBoA9fCmXvw-RlN_Mk_g/edit?gid=1986767549#gid=1986767549
+    
+    Please allow approximately 5–7 days for your name to be added to the participant list.
+     
+    In the meantime, continue tracking your distances. Once your name has been added,
+    you'll be able to backdate your entries and log any walks, jogs or runs you've already completed.
+    """)
+ 
+with st.expander("12. How accurate do my distances need to be?"):
+    st.write("""
+    Please provide your best and most honest estimate based on your fitness tracker,
+    fitness app, treadmill reading or route distance. Every kilometre contributes
+    towards our shared goal of 70,000 km! 🎉
+    """)
+ 
+st.info(
+"❤️ Thank you for being part of the Cedar Girls 70th Anniversary Distance Challenge. "
+"Every kilometre counts towards our shared goal of 70,000 km!"
+)
+
+st.markdown("---")
+
 # =========================
 # ADMIN PANEL (HIDDEN)
 # =========================
@@ -639,187 +823,5 @@ if admin_password == st.secrets.get("ADMIN_PASSWORD", ""):
         
             st.success("✅ Cleared all submissions")
             st.rerun()
-
-
-# =========================
-# VIEW INDIVIDUAL ENTRIES
-# =========================
-#st.subheader("🧾 All Submissions")
-
-#if not df.empty:
-  #  st.dataframe(
-  #      df[
-  #          ["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]
-  #      ].sort_values(by="activity_date", ascending=False),
-  #      use_container_width=True
-  #  )
-#else:
-   # st.info("No submissions yet.")
-
-
-# =========================
-# PROGRESS
-# =========================
-
-st.header("📊 Progress")
-
-# ✅ ALWAYS refresh latest data here
-df = get_data()
-
-if not df.empty:
-    total_km = df["distance"].sum()
-    st.metric("Total KM", f"{total_km:.2f}")
-    st.progress(min(total_km / GOAL_KM, 1.0))
-
-    st.subheader("🏆 Leaderboard")
-    leaderboard = df.groupby(["name", "grad_year", "cca"])["distance"].sum().sort_values(ascending=False)
-    st.dataframe(leaderboard.reset_index())
-
-    # ✅ ✅ ADD THIS (your missing table)
-    st.subheader("🧾 All Submissions")
-    st.dataframe(
-        df[["submission_id", "name", "grad_year", "cca", "distance", "activity_date"]]
-        .sort_values(by="activity_date", ascending=False),
-        use_container_width=True
-    )
-
-else:
-    st.info("No data yet.")
-
-
-# =========================
-# TIMELINE
-# =========================
-st.header("📅 Timeline")
-
-today = date.today()
-
-if today < START_DATE:
-    st.info("Event not started")
-
-elif today > END_DATE:
-    st.success("✅ Event completed!")
-
-else:
-    progress_days = (
-        (today - START_DATE).days /
-        (END_DATE - START_DATE).days
-    )
-
-    pct = progress_days * 100
-
-    st.write(f"**Challenge Duration Progress:** {pct:.1f}%")
-    st.progress(progress_days)
-
-    # Milestone achievements
-    milestones = []
-
-    for milestone in [25, 50, 75, 100]:
-        if pct >= milestone:
-            milestones.append(f"✅ {milestone}%")
-        else:
-            milestones.append(f"⬜ {milestone}%")
-
-    st.write(" | ".join(milestones))
-
-# =========================
-# FAQ
-# =========================
-st.markdown("---")
- 
-st.header("❓ FAQ & Challenge Guidelines")
- 
-st.write(
-"Have a question? Check our FAQ below! "
-"If you don't see your question here, feel free to reach out to @Soffiah."
-)
- 
-with st.expander("1. Can I make multiple entries per day?"):
-    st.write("""
-    No, only one entry is allowed per day. If you've walked, jogged, or run multiple times in a day,
-    simply add up all the distances and submit the total distance for that day.
-    """)
- 
-with st.expander("2. What should I do if I made an erroneous entry?"):
-    st.write("""
-    No worries! Just let @Soffiah know and provide your Submission ID (if available).
-    The entry can be edited or deleted, and you can then submit the correct distance.
-    """)
- 
-with st.expander("3. What happens if I ran yesterday but forgot to log it?"):
-    st.write("""
-    That's perfectly fine! You can backdate your entry. Simply select the date you missed
-    and submit the distance you covered on that day.
-    """)
- 
-with st.expander("4. I did a Zumba / Pilates / Badminton / Pickleball / Tennis session. Can I add that in?"):
-    st.write("""
-    Sorry, not for this challenge. We're currently tracking only walking, jogging,
-    and running distances so that everyone is measured using the same criteria.
-    """)
- 
-with st.expander("5. I went for a hike. Can I add that in?"):
-    st.write("""
-    Yes! Hiking counts as walking, so feel free to log the distance covered during your hike.
-    """)
- 
-with st.expander("6. I only walk or run on a treadmill. Does that count?"):
-    st.write("""
-    Absolutely! Both indoor treadmill and outdoor walking, jogging and running distances are accepted.
-     
-    Simply log the distance shown on your treadmill or fitness device as you would for any other walk or run.
-    """)
- 
-with st.expander("7. I completed a triathlon. Can I include my running, cycling and swimming distances?"):
-    st.write("""
-    First of all, wow, that's impressive! 💪
-     
-    For this challenge, we're only tracking walking, jogging and running distances.
-    Please log only your running distance from the triathlon.
-    """)
- 
-with st.expander("8. I have an Apple Watch or Garmin. Can I sync my data directly?"):
-    st.write("""
-    Unfortunately not. As this is a community initiative run on a $0 budget,
-    we're unable to support direct syncing from fitness devices at the moment.
-    """)
- 
-with st.expander("9. I use Strava, Runkeeper or another fitness app. Can the site read my activity automatically?"):
-    st.write("""
-    Not at the moment. As this is a community initiative run on a $0 budget,
-    you'll need to enter your distances manually.
-    """)
- 
-with st.expander("10. Should I upload screenshots or records from my fitness device to substantiate my entry?"):
-    st.write("""
-    No need! We're operating on trust and honesty because Cedarians are 🎼 courteous, honest every day. 🎶🎵
-     
-    That said, we'd love for you to share your screenshots, routes, photos and achievements
-    in the WhatsApp group to motivate and inspire fellow participants!
-    """)
- 
-with st.expander("11. I can't see my name in the participant list. What should I do?"):
-    st.write("""
-    Please complete the registration form using the link below:
-     
-    🔗 https://docs.google.com/spreadsheets/d/14n5bPduKfCls8ObaRoyX-IbYBoA9fCmXvw-RlN_Mk_g/edit?gid=1986767549#gid=1986767549
-    
-    Please allow approximately 5–7 days for your name to be added to the participant list.
-     
-    In the meantime, continue tracking your distances. Once your name has been added,
-    you'll be able to backdate your entries and log any walks, jogs or runs you've already completed.
-    """)
- 
-with st.expander("12. How accurate do my distances need to be?"):
-    st.write("""
-    Please provide your best and most honest estimate based on your fitness tracker,
-    fitness app, treadmill reading or route distance. Every kilometre contributes
-    towards our shared goal of 70,000 km! 🎉
-    """)
- 
-st.info(
-"❤️ Thank you for being part of the Cedar Girls 70th Anniversary Distance Challenge. "
-"Every kilometre counts towards our shared goal of 70,000 km!"
-)
 
 
