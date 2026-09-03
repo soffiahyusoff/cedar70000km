@@ -735,88 +735,88 @@ st.write(
 )
  
 with st.expander("1. Can I make multiple entries per day?"):
-st.write("""
-No, only one entry is allowed per day. If you've walked, jogged, or run multiple times in a day,
-simply add up all the distances and submit the total distance for that day.
-""")
+    st.write("""
+    No, only one entry is allowed per day. If you've walked, jogged, or run multiple times in a day,
+    simply add up all the distances and submit the total distance for that day.
+    """)
  
 with st.expander("2. What should I do if I made an erroneous entry?"):
-st.write("""
-No worries! Just let @Soffiah know and provide your Submission ID (if available).
-The entry can be edited or deleted, and you can then submit the correct distance.
-""")
+    st.write("""
+    No worries! Just let @Soffiah know and provide your Submission ID (if available).
+    The entry can be edited or deleted, and you can then submit the correct distance.
+    """)
  
 with st.expander("3. What happens if I ran yesterday but forgot to log it?"):
-st.write("""
-That's perfectly fine! You can backdate your entry. Simply select the date you missed
-and submit the distance you covered on that day.
-""")
+    st.write("""
+    That's perfectly fine! You can backdate your entry. Simply select the date you missed
+    and submit the distance you covered on that day.
+    """)
  
 with st.expander("4. I did a Zumba / Pilates / Badminton / Pickleball / Tennis session. Can I add that in?"):
-st.write("""
-Sorry, not for this challenge. We're currently tracking only walking, jogging,
-and running distances so that everyone is measured using the same criteria.
-""")
+    st.write("""
+    Sorry, not for this challenge. We're currently tracking only walking, jogging,
+    and running distances so that everyone is measured using the same criteria.
+    """)
  
 with st.expander("5. I went for a hike. Can I add that in?"):
-st.write("""
-Yes! Hiking counts as walking, so feel free to log the distance covered during your hike.
-""")
+    st.write("""
+    Yes! Hiking counts as walking, so feel free to log the distance covered during your hike.
+    """)
  
 with st.expander("6. I only walk or run on a treadmill. Does that count?"):
-st.write("""
-Absolutely! Both indoor treadmill and outdoor walking, jogging and running distances are accepted.
- 
-Simply log the distance shown on your treadmill or fitness device as you would for any other walk or run.
-""")
+    st.write("""
+    Absolutely! Both indoor treadmill and outdoor walking, jogging and running distances are accepted.
+     
+    Simply log the distance shown on your treadmill or fitness device as you would for any other walk or run.
+    """)
  
 with st.expander("7. I completed a triathlon. Can I include my running, cycling and swimming distances?"):
-st.write("""
-First of all, wow, that's impressive! 💪
- 
-For this challenge, we're only tracking walking, jogging and running distances.
-Please log only your running distance from the triathlon.
-""")
+    st.write("""
+    First of all, wow, that's impressive! 💪
+     
+    For this challenge, we're only tracking walking, jogging and running distances.
+    Please log only your running distance from the triathlon.
+    """)
  
 with st.expander("8. I have an Apple Watch or Garmin. Can I sync my data directly?"):
-st.write("""
-Unfortunately not. As this is a community initiative run on a $0 budget,
-we're unable to support direct syncing from fitness devices at the moment.
-""")
+    st.write("""
+    Unfortunately not. As this is a community initiative run on a $0 budget,
+    we're unable to support direct syncing from fitness devices at the moment.
+    """)
  
 with st.expander("9. I use Strava, Runkeeper or another fitness app. Can the site read my activity automatically?"):
-st.write("""
-Not at the moment. As this is a community initiative run on a $0 budget,
-you'll need to enter your distances manually.
-""")
+    st.write("""
+    Not at the moment. As this is a community initiative run on a $0 budget,
+    you'll need to enter your distances manually.
+    """)
  
 with st.expander("10. Should I upload screenshots or records from my fitness device to substantiate my entry?"):
-st.write("""
-No need! We're operating on trust and honesty because Cedarians are courteous and honest every day. ❤️
- 
-That said, we'd love for you to share your screenshots, routes, photos and achievements
-in the WhatsApp group to motivate and inspire fellow participants!
-""")
+    st.write("""
+    No need! We're operating on trust and honesty because Cedarians are 🎼 courteous, honest every day. 🎶🎵
+     
+    That said, we'd love for you to share your screenshots, routes, photos and achievements
+    in the WhatsApp group to motivate and inspire fellow participants!
+    """)
  
 with st.expander("11. I can't see my name in the participant list. What should I do?"):
-st.write("""
-Please complete the registration form using the link below:
- 
-🔗 https://docs.google.com/spreadsheets/d/14n5bPduKfCls8ObaRoyX-IbYBoA9fCmXvw-RlN_Mk_g/edit?gid=1986767549#gid=1986767549
-Please allow approximately 5–7 days for your name to be added to the participant list.
- 
-In the meantime, continue tracking your distances. Once your name has been added,
-you'll be able to backdate your entries and log any walks, jogs or runs you've already completed.
-""")
+    st.write("""
+    Please complete the registration form using the link below:
+     
+    🔗 https://docs.google.com/spreadsheets/d/14n5bPduKfCls8ObaRoyX-IbYBoA9fCmXvw-RlN_Mk_g/edit?gid=1986767549#gid=1986767549
+    Please allow approximately 5–7 days for your name to be added to the participant list.
+     
+    In the meantime, continue tracking your distances. Once your name has been added,
+    you'll be able to backdate your entries and log any walks, jogs or runs you've already completed.
+    """)
  
 with st.expander("12. How accurate do my distances need to be?"):
-st.write("""
-Please provide your best and most honest estimate based on your fitness tracker,
-fitness app, treadmill reading or route distance.
- 
-There's no need to be exact to the nearest metre. Every kilometre contributes
-towards our shared goal of 70,000 km! 🎉
-""")
+    st.write("""
+    Please provide your best and most honest estimate based on your fitness tracker,
+    fitness app, treadmill reading or route distance.
+     
+    There's no need to be exact to the nearest metre. Every kilometre contributes
+    towards our shared goal of 70,000 km! 🎉
+    """)
  
 st.info(
 "❤️ Thank you for being part of the Cedar Girls 70th Anniversary Distance Challenge. "
