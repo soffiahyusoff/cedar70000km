@@ -620,8 +620,20 @@ with st.expander("11. I can't see my name in the participant list. What should I
     In the meantime, continue tracking your distances. Once your name has been added,
     you'll be able to backdate your entries and log any walks, jogs or runs you've already completed.
     """)
- 
-with st.expander("12. How accurate do my distances need to be?"):
+    
+with st.expander("12. My smartwatch tracks my daily steps and estimates the distance I've covered. Can I submit that distance?"):
+    st.write("""
+    Not quite. The spirit of this challenge is to encourage participants to set aside time for intentional exercise,
+    whether that's a walk, jog, run, hike, or treadmill session.
+    
+    While your smartwatch may track steps accumulated throughout your day, we're asking participants to log only
+    distances covered during a deliberate exercise activity, rather than the total distance accumulated through
+    day-to-day movement.
+    
+    Every kilometre logged should represent a conscious effort to get active and move with purpose. 💚
+    """)
+
+with st.expander("13. How accurate do my distances need to be?"):
     st.write("""
     Please provide your best and most honest estimate based on your fitness tracker,
     fitness app, treadmill reading or route distance. Every kilometre contributes
