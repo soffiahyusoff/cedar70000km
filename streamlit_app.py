@@ -633,7 +633,6 @@ st.info(
 "Every kilometre counts towards our shared goal of 70,000 km!"
 )
 
-st.markdown("---")
 
 # =========================
 # ADMIN PANEL (HIDDEN)
