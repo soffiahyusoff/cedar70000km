@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import datetime, date
+import plotly.graph_objects as go
 import uuid
 from streamlit_gsheets import GSheetsConnection
 
@@ -497,6 +498,151 @@ if not df.empty:
 else:
     st.info("No data yet.")
 
+# =========================
+# 📈 ACTUAL VS TARGET
+# =========================
+
+st.subheader("📈 Are We On Track?")
+
+CHALLENGE_START = pd.Timestamp("2026-07-29")
+CHALLENGE_END = pd.Timestamp("2027-07-02")
+TARGET_DISTANCE = 70000
+
+if not df.empty:
+
+    progress_df = df.copy()
+
+    progress_df["activity_date"] = pd.to_datetime(
+        progress_df["activity_date"]
+    )
+
+    # Total distance per day
+    daily = (
+        progress_df
+        .groupby("activity_date")["distance"]
+        .sum()
+        .reset_index()
+    )
+
+    # Generate every day in challenge
+    timeline = pd.DataFrame(
+        {
+            "activity_date": pd.date_range(
+                CHALLENGE_START,
+                CHALLENGE_END,
+                freq="D"
+            )
+        }
+    )
+
+    timeline = timeline.merge(
+        daily,
+        on="activity_date",
+        how="left"
+    )
+
+    timeline["distance"] = timeline["distance"].fillna(0)
+
+    # Actual cumulative distance
+    timeline["actual_cumulative"] = (
+        timeline["distance"].cumsum()
+    )
+
+    # Ideal cumulative distance
+    total_days = (
+        CHALLENGE_END - CHALLENGE_START
+    ).days
+
+    timeline["days_elapsed"] = (
+        timeline["activity_date"] -
+        CHALLENGE_START
+    ).dt.days
+
+    timeline["target_cumulative"] = (
+        timeline["days_elapsed"] /
+        total_days
+    ) * TARGET_DISTANCE
+
+    # Today's target
+    today = pd.Timestamp.today().normalize()
+
+    if today > CHALLENGE_END:
+        today = CHALLENGE_END
+
+    elapsed_days = (
+        today - CHALLENGE_START
+    ).days
+
+    target_today = (
+        elapsed_days / total_days
+    ) * TARGET_DISTANCE
+
+    actual_today = (
+        timeline.loc[
+            timeline["activity_date"] <= today,
+            "actual_cumulative"
+        ].max()
+    )
+
+    difference = actual_today - target_today
+
+    if difference >= 0:
+
+        st.success(
+            f"🟢 We are "
+            f"{difference:,.0f} km "
+            f"ahead of target pace!"
+        )
+
+    else:
+
+        st.warning(
+            f"🟠 We are "
+            f"{abs(difference):,.0f} km "
+            f"behind target pace."
+        )
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=timeline["activity_date"],
+            y=timeline["target_cumulative"],
+            mode="lines",
+            name="Target Pace",
+            line=dict(
+                color="royalblue",
+                width=3,
+                dash="dash"
+            )
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=timeline["activity_date"],
+            y=timeline["actual_cumulative"],
+            mode="lines",
+            name="Actual Distance",
+            line=dict(
+                color="gold",
+                width=4
+            )
+        )
+    )
+
+    fig.update_layout(
+        height=500,
+        xaxis_title="Date",
+        yaxis_title="Cumulative Distance (km)",
+        legend_title="Legend",
+        template="plotly_white"
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 # =========================
 # TIMELINE
