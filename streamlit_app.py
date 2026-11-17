@@ -498,6 +498,7 @@ if not df.empty:
 else:
     st.info("No data yet.")
 
+
 # =========================
 # 📈 ACTUAL VS TARGET
 # =========================
@@ -607,6 +608,10 @@ if not df.empty:
             f"behind target pace."
         )
     
+    st.caption(
+    "🎯 The blue dashed line shows where we need to be to reach 70,000 km by 2 Jul 2027. "
+    "The gold line shows the distance our Cedar community has actually achieved."
+    )
     
     # ==================================
     # Actual line stops at latest activity
@@ -717,6 +722,7 @@ if not df.empty:
         fig,
         use_container_width=True
     )
+
 
 # =========================
 # TIMELINE
