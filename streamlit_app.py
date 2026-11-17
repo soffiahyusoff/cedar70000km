@@ -505,6 +505,11 @@ else:
 
 st.subheader("📈 Are We On Track?")
 
+st.caption(
+    "🎯 The blue dashed line shows where we need to be to reach 70,000 km by 2 Jul 2027. "
+    "The gold line shows the distance our Cedar community has actually achieved."
+)
+
 CHALLENGE_START = pd.Timestamp("2026-08-29")
 CHALLENGE_END = pd.Timestamp("2027-07-02")
 TARGET_DISTANCE = 70000
@@ -587,31 +592,63 @@ if not df.empty:
 
     difference = actual_today - target_today
     
+    
+    # ==================================
+    # PARTICIPANT COUNT
+    # ==================================
+
+    participants_count = len(
+        participants_df[
+            participants_df["participant_id"]
+            != "CG70-0000"
+        ]
+    )
+
+
+    
     st.metric(
             "Current Distance",
             f"{actual_today:,.0f} km"
         )
     
+    
+    # ==================================
+    # MOTIVATION MESSAGE
+    # ==================================
+
     if difference >= 0:
 
         st.success(
-            f"🟢 We are "
-            f"{difference:,.0f} km "
-            f"ahead of target pace!"
+            f"🟢 Great job, everyone! "
+            f"We are {difference:,.0f} km "
+            f"ahead of target pace. "
+            f"Keep it up! 💚"
         )
 
     else:
 
+        behind_by = abs(difference)
+
+        km_per_person = (
+            behind_by /
+            participants_count
+        )
+
         st.warning(
-            f"🟠 We are "
-            f"{abs(difference):,.0f} km "
+            f"🟠 We are currently "
+            f"{behind_by:,.0f} km "
             f"behind target pace."
         )
-    
-    st.caption(
-    "🎯 The blue dashed line shows where we need to be to reach 70,000 km by 2 Jul 2027. "
-    "The gold line shows the distance our Cedar community has actually achieved."
-    )
+
+        st.info(
+            f"💚 Cedar Challenge Call-To-Action!\n\n"
+            f"We currently have "
+            f"{participants_count} participants.\n\n"
+            f"If each Cedarian contributes just "
+            f"{km_per_person:.1f} km today, "
+            f"we'll catch up to our target pace!"
+        )
+
     
     # ==================================
     # Actual line stops at latest activity
@@ -622,6 +659,16 @@ if not df.empty:
     actual_timeline = timeline[
         timeline["activity_date"] <= latest_activity
     ]
+
+    
+
+    current_total = (
+        actual_timeline[
+            "actual_cumulative"
+        ]
+        .iloc[-1]
+    )
+
 
     # ==================================
     # Plot
@@ -663,7 +710,7 @@ if not df.empty:
         actual_timeline["actual_cumulative"]
         .iloc[-1]
     )
-
+# Current position marker
     fig.add_trace(
         go.Scatter(
             x=[latest_activity],
@@ -692,21 +739,23 @@ if not df.empty:
     fig.add_annotation(
         x=today,
         y=max(
-            timeline["target_cumulative"]
+            timeline[
+                "target_cumulative"
+            ]
         ),
         text="Today",
         showarrow=False,
         yshift=10
     )
 
-    # Layout
+    # Styling
     fig.update_layout(
         height=550,
+        hovermode="x unified",
+        template="plotly_white",
         xaxis_title="Date",
         yaxis_title="Cumulative Distance (km)",
-        legend_title="Legend",
-        template="plotly_white",
-        hovermode="x unified"
+        legend_title="Legend"
     )
 
     fig.update_xaxes(
