@@ -504,7 +504,7 @@ else:
 
 st.subheader("📈 Are We On Track?")
 
-CHALLENGE_START = pd.Timestamp("2026-07-29")
+CHALLENGE_START = pd.Timestamp("2026-08-29")
 CHALLENGE_END = pd.Timestamp("2027-07-02")
 TARGET_DISTANCE = 70000
 
