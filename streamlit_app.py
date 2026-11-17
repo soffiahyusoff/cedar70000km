@@ -585,7 +585,12 @@ if not df.empty:
     )
 
     difference = actual_today - target_today
-
+    
+    st.metric(
+            "Current Distance",
+            f"{actual_today:,.0f} km"
+        )
+    
     if difference >= 0:
 
         st.success(
@@ -601,9 +606,25 @@ if not df.empty:
             f"{abs(difference):,.0f} km "
             f"behind target pace."
         )
+    
+    
+    # ==================================
+    # Actual line stops at latest activity
+    # ==================================
+
+    latest_activity = daily["activity_date"].max()
+
+    actual_timeline = timeline[
+        timeline["activity_date"] <= latest_activity
+    ]
+
+    # ==================================
+    # Plot
+    # ==================================
 
     fig = go.Figure()
 
+    # Target line
     fig.add_trace(
         go.Scatter(
             x=timeline["activity_date"],
@@ -618,10 +639,11 @@ if not df.empty:
         )
     )
 
+    # Actual line
     fig.add_trace(
         go.Scatter(
-            x=timeline["activity_date"],
-            y=timeline["actual_cumulative"],
+            x=actual_timeline["activity_date"],
+            y=actual_timeline["actual_cumulative"],
             mode="lines",
             name="Actual Distance",
             line=dict(
@@ -631,12 +653,64 @@ if not df.empty:
         )
     )
 
+    # Current-position marker
+    current_total = (
+        actual_timeline["actual_cumulative"]
+        .iloc[-1]
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=[latest_activity],
+            y=[current_total],
+            mode="markers+text",
+            text=[
+                f"{current_total:,.0f} km"
+            ],
+            textposition="top center",
+            marker=dict(
+                color="gold",
+                size=12
+            ),
+            showlegend=False
+        )
+    )
+
+    # Today marker
+    fig.add_vline(
+        x=today,
+        line_width=2,
+        line_dash="dot",
+        line_color="red"
+    )
+
+    fig.add_annotation(
+        x=today,
+        y=max(
+            timeline["target_cumulative"]
+        ),
+        text="Today",
+        showarrow=False,
+        yshift=10
+    )
+
+    # Layout
     fig.update_layout(
-        height=500,
+        height=550,
         xaxis_title="Date",
         yaxis_title="Cumulative Distance (km)",
         legend_title="Legend",
-        template="plotly_white"
+        template="plotly_white",
+        hovermode="x unified"
+    )
+
+    fig.update_xaxes(
+        range=[
+            CHALLENGE_START,
+            CHALLENGE_END
+        ],
+        dtick="M1",
+        tickformat="%b %Y"
     )
 
     st.plotly_chart(
